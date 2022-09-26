@@ -21,6 +21,7 @@ class MyBot(commands.Bot):
         
         await bot.tree.sync(guild=discord.Object(id=config_data['test_guild']))
         await bot.tree.sync(guild=discord.Object(id=config_data['tropa_guild']))
+        await bot.tree.sync(guild=discord.Object(id=config_data['research_guild']))
     
     async def on_ready(self):
         print(f"Bot logged in as {self.user}")

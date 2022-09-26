@@ -1,14 +1,19 @@
 import discord
+from typing import Type
+from db.manage import Connection, Subject, Assessment
 
 class SaveAssessmentMenu(discord.ui.View):
-    def __init__(self, embed=None):
+    def __init__(self, assessment_data, embed=None):
         super().__init__()
+        self.assessment = assessment_data
         self.value = None
         self.embed = embed
     
     @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
     async def save_assessment(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.embed.color = 0x2ec27e
+        with Connection() as con:
+            con.add(self.assessment)
         await interaction.response.edit_message(view=None, embed=self.embed)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
@@ -93,3 +98,23 @@ class CancelDetailMenu(discord.ui.View):
     @discord.ui.button(label="cancel", style=discord.ButtonStyle.grey)
     async def cancel_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(embed=self.embed, view=EditAssessmentMenu(self.embed))
+
+
+
+class ConfirmDeleteAssessment(discord.ui.View):
+    def __init__(self, assessment, delete_callback, embed=None):
+        super().__init__()
+        self.assessment = assessment
+        self.delete_cb = delete_callback
+        self.embed = embed
+
+    @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger)
+    async def delete_assessment_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.embed = discord.Embed(title="Delete Assessment Successful", description=f"Successfuly deleted assessemtn \"{self.assessment.name}\"", color=0x57e389)
+        self.delete_cb()
+        await interaction.response.edit_message(embed=self.embed, view=None)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel_delete_assessment_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.embed = discord.Embed(title="Delete Assessment Cancellation", description=f"deletion of assessemtn \"{self.assessment.name}\" is cancelled", color=0x57e389)
+        await interaction.response.edit_message(embed=self.embed, view=None)
