@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker, Query
-from .tables import engine, Schedule, Subject, Assessment
+from .tables import engine, Schedule, Subject, Assessment, SubjectClass
 
 
 class Connection(object):

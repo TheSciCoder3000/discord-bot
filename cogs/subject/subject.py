@@ -32,6 +32,13 @@ class Subjects(commands.Cog):
 
         view = SubjectMenu(embed=embed, name=subj_name, code=code)
 
+        exist_subjs = None
+        with Connection() as con:
+            exist_subjs = con.query(Subject).filter_by(code=code).first()
+
+        if not exist_subjs is None:
+            await interaction.response.send_message(f'*Error: Subject code `{code}` already exists*')
+            return
         await interaction.response.send_message(embed=embed, view=view)
 
 
