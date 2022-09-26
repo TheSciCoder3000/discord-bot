@@ -30,7 +30,11 @@ class ChooseSchedMenu(discord.ui.View):
         self.value = None
         self.schedule = schedule
         self.embed = embed
-        select.callback = self.select_callback
+
+        async def parser(interaction: discord.Interaction):
+            await self.select_callback(interaction, select.values[0])
+
+        select.callback = parser
         self.add_item(select)
 
     @discord.ui.button(label="cancel", style=discord.ButtonStyle.grey)
@@ -38,9 +42,18 @@ class ChooseSchedMenu(discord.ui.View):
         await interaction.response.edit_message(embed=None, view=None, content='*schedule cancelled*')
 
     async def select_callback(self, interaction: discord.Interaction, class_id: int):
+        # connect to the database
         with Connection() as con:
+            # fetch class item using class id parameter
             class_inst = con.query(SubjectClass).filter_by(id=class_id).first()
+
+            # link schedule to its class item
             self.schedule.sched_class = class_inst
-            self.embed.insert_field_at(0, name="Subject", value=class_inst.subject, inline=False)
+
+            # modify embed
+            self.embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
+            self.embed.add_field(name="Class", value=class_inst.name, inline=True)
+
             view = ScheduleSaveMenu(self.schedule, self.embed)
-            await interaction.response.edit_message(embed=self.embed)
+
+            await interaction.response.edit_message(embed=self.embed, view=view)

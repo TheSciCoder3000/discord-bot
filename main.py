@@ -13,7 +13,8 @@ class MyBot(commands.Bot):
         self.initial_extensions = [
             "cogs.assessment.assessment",
             "cogs.subject.subject",
-            "cogs.schedule.schedule"
+            "cogs.schedule.schedule",
+            "cogs.classes.classes"
         ]
 
     async def setup_hook(self):
