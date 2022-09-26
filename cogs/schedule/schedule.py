@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.app_commands import Choice
 from db.manage import Connection, Subject, Schedule, SubjectClass
 from dateutil.parser import parse
-from .schedMenu import ScheduleSaveMenu
+from .schedMenu import ScheduleSaveMenu, ChooseSchedMenu
 
 
 config = ConfigParser()
@@ -48,29 +48,52 @@ class Schedules(commands.Cog):
         day: int,
         subject: int
     ):
-
+        # connect to the database
         with Connection() as con:
+            # get the subject data and its classes
             subject_data = con.query(Subject).filter_by(id=subject).first()
             class_data = subject_data.classes
 
+            # create an embed
             embed=discord.Embed(title="New Schedule", description="details of your newly created schedule", color=0xff7800)
             embed.set_author(name=f"@{interaction.user}")
-            embed.add_field(name="Subject", value=subject_data.code, inline=False)
             embed.add_field(name="Day", value=self.dayList[day], inline=True)
             str_time_start = parse(time_in).strftime("%I:%M %p")
             str_time_end = parse(time_out).strftime("%I:%M %p")
             embed.add_field(name="Time", value=f"{str_time_start} - {str_time_end}", inline=True)
 
+            # create schedule instance from parameters
+            sched = Schedule(
+                weekdays=day, 
+                time_in=parse(time_in).time(), 
+                time_out=parse(time_out).time(), 
+                guild_id=interaction.guild.id
+            )
+
+            # if there is only one connected class to the subject
             if len(class_data) == 1:
-                sched = Schedule(
-                    weekdays=day, 
-                    time_in=parse(time_in).time(), 
-                    time_out=parse(time_out).time(), 
-                    guild_id=interaction.guild.id,
-                    sched_class=class_data[0]
+                embed.insert_field_at(0, name="Subject", value=subject_data.code, inline=False)
+                view = ScheduleSaveMenu(sched, embed)
+
+                # set the sched instance's sched column
+                sched.sched_class = class_data[0]
+
+                # send confirmation prompt
+                await interaction.response.send_message(embed=embed, view=view)
+
+            else:
+                # create a select ui
+                select = discord.ui.Select(
+                    placeholder="Choose one of the available classes",
+                    options=[
+                        discord.SelectOption(
+                            label=subj_class.name,
+                            value=subj_class.id
+                        ) for subj_class in class_data
+                    ]
                 )
 
-                view = ScheduleSaveMenu(sched, embed)
+                view = ChooseSchedMenu(sched, select, embed)
 
                 await interaction.response.send_message(embed=embed, view=view)
     
