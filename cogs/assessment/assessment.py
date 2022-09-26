@@ -55,7 +55,7 @@ class Assessments(commands.Cog):
             embed.add_field(name="Subject", value=subject_data.code, inline=False)
 
             # create new assessment db instance
-            assessment = Assessment(name=ass_name, subject=subject_data, ass_type=ass_type, category=category)
+            assessment = Assessment(name=ass_name, subject=subject_data, ass_type=ass_type, category=category, guild_id=interaction.guild.id)
 
             # create custom ui view
             view = SaveAssessmentMenu(assessment, embed=embed)

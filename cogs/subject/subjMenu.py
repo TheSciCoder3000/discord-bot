@@ -16,7 +16,7 @@ class SubjectMenu(discord.ui.View):
         # connect to the database
         with Connection() as con:
             # add new subject to the database
-            con.add(Subject(name=self.name, code=self.code))
+            con.add(Subject(name=self.name, code=self.code, guild_id=interaction.guild.id))
 
             # add a new main class automatically
             subj_inst = con.query(Subject).filter_by(code=self.code).first()

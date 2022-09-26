@@ -25,7 +25,8 @@ class SubjectClass(Base):
     name = Column(String(100), nullable=False)
     schedules = relationship('Schedule', backref='class')
     subject_id = Column(Integer, ForeignKey('subjects.id'))
-
+    guild_id = Column(Integer, nullable=True)
+    
 
 class Schedule(Base):
     __tablename__ = 'schedules'
@@ -36,6 +37,7 @@ class Schedule(Base):
     time_in = Column(Time, nullable=False)
     time_out = Column(Time, nullable=False)
     class_id = Column(Integer, ForeignKey('classes.id'))
+    guild_id = Column(Integer, nullable=True)
 
     def __repr__(self):
         name = self.time.strftime("%I:%M %p")
@@ -50,6 +52,7 @@ class Assessment(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     ass_type = Column(String(20), nullable=True)
     category = Column(String(25), nullable=True)
+    guild_id = Column(Integer, nullable=True)
 
     def __repr__(self):
         return f"<{self.name} - {self.category}>"
