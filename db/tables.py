@@ -11,7 +11,7 @@ class Subject(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    code = Column(String(15), nullable=False)
+    code = Column(String(15), nullable=False, unique=True)
     date_created = Column(DateTime, default=datetime.utcnow)
     classes = relationship('SubjectClass', backref='subject')
     assessments = relationship('Assessment', backref='subject')
