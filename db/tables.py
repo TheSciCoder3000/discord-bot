@@ -23,10 +23,10 @@ class SubjectClass(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    schedules = relationship('Schedule', backref='class')
+    schedules = relationship('Schedule', backref='sched_class')
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     guild_id = Column(Integer, nullable=True)
-    
+
 
 class Schedule(Base):
     __tablename__ = 'schedules'
@@ -40,8 +40,8 @@ class Schedule(Base):
     guild_id = Column(Integer, nullable=True)
 
     def __repr__(self):
-        name = self.time.strftime("%I:%M %p")
-        return f"<{name} - {self.weekdays}>"
+        time_in = self.time_in.strftime("%I:%M %p")
+        return f"<{time_in} - {self.weekdays}>"
 
 
 class Assessment(Base):
