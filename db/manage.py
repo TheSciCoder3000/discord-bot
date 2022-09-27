@@ -15,7 +15,7 @@ class Connection(object):
         self.session.add(row)
         self.session.commit()
 
-    def query(self, rowObj):
+    def query(self, rowObj) -> Query:
         return self.session.query(rowObj)
 
     def __del__(self):

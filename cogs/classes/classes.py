@@ -22,7 +22,12 @@ class Classes(commands.Cog):
     @app_commands.describe(subject="subject of the class")
     async def add_class(self, interaction: discord.Interaction, name: str, subject: int):
         with Connection() as con:
-            subject_inst = con.query(Subject).filter_by(id=subject).first()
+            subject_inst = con.query(Subject).get(subject)
+
+            if subject_inst is None:
+                await interaction.response.send_message(content="Error: subject does not exist")
+                return
+
             embed=discord.Embed(title="New Class", description="details of your newly created class", color=0xff7800)
             embed.set_author(name=f"@{interaction.user}")
             embed.add_field(name="Name", value=name, inline=False)

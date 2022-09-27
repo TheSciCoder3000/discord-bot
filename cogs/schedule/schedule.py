@@ -52,7 +52,12 @@ class Schedules(commands.Cog):
         # connect to the database
         with Connection() as con:
             # get the subject data and its classes
-            subject_data = con.query(Subject).filter_by(id=subject).first()
+            subject_data = con.query(Subject).get(subject)
+
+            if subject_data is None:
+                await interaction.response.send_message(content="Error: subject does not exist")
+                return
+
             class_data = subject_data.classes
 
             # create an embed
