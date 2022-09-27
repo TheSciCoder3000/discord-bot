@@ -26,6 +26,3 @@ class Connection(object):
     def remove(self, instance):
         self.session.delete(instance)
         self.session.commit()
-
-
-ConnectionType = Type[Connection]

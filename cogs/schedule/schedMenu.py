@@ -1,6 +1,6 @@
 import discord
 from cogs.utils import SaveActionUi
-from db.manage import Connection, ConnectionType, Subject, SubjectClass, Schedule
+from db.manage import Connection, Subject, SubjectClass, Schedule
 
 
 class ChooseSchedMenu(discord.ui.View):

@@ -118,6 +118,7 @@ class Schedules(commands.Cog):
             subjects = [
                 Choice(name=f"{subj.name}", value=subj.id)
                 for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                and subj.guild_id == interaction.guild.id
             ]
 
         return subjects

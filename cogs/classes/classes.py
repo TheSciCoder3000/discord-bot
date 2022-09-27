@@ -3,9 +3,8 @@ from configparser import ConfigParser
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from db.manage import Connection, Subject, Schedule, SubjectClass
+from db.manage import Connection, Subject, SubjectClass
 from cogs.utils import SaveActionUi
-from .classMenu import SaveClassMenu
 
 
 config = ConfigParser()
@@ -39,7 +38,6 @@ class Classes(commands.Cog):
                     subject=subject_inst
                 ))
 
-            # view = SaveClassMenu(class_inst, embed)
             view = SaveActionUi(add_class_db, "`*Class is cancelled*`", embed=embed)
 
             await interaction.response.send_message(embed=embed, view=view)
@@ -50,7 +48,7 @@ class Classes(commands.Cog):
         with Connection() as con:
             subjects = [
                 Choice(name=f"{subj.name}", value=subj.id)
-                for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                for subj in con.query(Subject) if current.lower() in subj.name.lower() and subj.guild_id == interaction.guild.id
             ]
 
         return subjects
