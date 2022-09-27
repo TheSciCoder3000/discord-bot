@@ -4,6 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
 from db.manage import Connection, Subject, Schedule, SubjectClass
+from cogs.utils import SaveActionUi
 from .classMenu import SaveClassMenu
 
 
@@ -27,12 +28,14 @@ class Classes(commands.Cog):
             embed.add_field(name="Name", value=name, inline=False)
             embed.add_field(name="Subject", value=subject_inst.code, inline=False)
 
-            class_inst = SubjectClass(
-                name=name,
-                subject=subject_inst
-            )
+            def add_class_db():
+                con.add(SubjectClass(
+                    name=name,
+                    subject=subject_inst
+                ))
 
-            view = SaveClassMenu(class_inst, embed)
+            # view = SaveClassMenu(class_inst, embed)
+            view = SaveActionUi(add_class_db, "`*Class is cancelled*`", embed=embed)
 
             await interaction.response.send_message(embed=embed, view=view)
 

@@ -6,7 +6,8 @@ from discord.ext import commands
 from discord.app_commands import Choice
 from db.manage import Connection, Subject, Schedule, SubjectClass
 from dateutil.parser import parse
-from .schedMenu import ScheduleSaveMenu, ChooseSchedMenu
+from cogs.utils import SaveActionUi
+from .schedMenu import ChooseSchedMenu
 
 
 config = ConfigParser()
@@ -73,10 +74,15 @@ class Schedules(commands.Cog):
             # if there is only one connected class to the subject
             if len(class_data) == 1:
                 embed.insert_field_at(0, name="Subject", value=subject_data.code, inline=False)
-                view = ScheduleSaveMenu(sched, embed)
 
-                # set the sched instance's sched column
-                sched.sched_class = class_data[0]
+                def save_callback():
+                    # set the sched instance's sched column
+                    sched.sched_class = class_data[0]
+                    con.add(sched)
+
+
+                view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
+
 
                 # send confirmation prompt
                 await interaction.response.send_message(embed=embed, view=view)
@@ -93,7 +99,20 @@ class Schedules(commands.Cog):
                     ]
                 )
 
-                view = ChooseSchedMenu(sched, select, embed)
+                def on_select():
+                    class_inst = con.query(SubjectClass).get(select.values[0])
+                    embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
+                    embed.add_field(name="Class", value=class_inst.name, inline=True)
+
+                    def save_callback():
+                        sched.sched_class = class_inst
+                        con.add(sched)
+
+                    view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
+
+                    return [embed, view]
+
+                view = ChooseSchedMenu(sched, select, on_select, embed)
 
                 await interaction.response.send_message(embed=embed, view=view)
     
