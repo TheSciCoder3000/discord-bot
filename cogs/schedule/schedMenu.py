@@ -1,15 +1,16 @@
 import discord
-from db.manage import Connection, Subject, SubjectClass
+from cogs.utils import SaveActionUi
+from db.manage import Connection, ConnectionType, Subject, SubjectClass, Schedule
 
 
 class ChooseSchedMenu(discord.ui.View):
-    def __init__(self, schedule, select, on_select, embed):
+    def __init__(self, schedule: Schedule, select: discord.ui.Select, connection: Connection, embed: discord.Embed):
         super().__init__()
         self.value = None
         self.schedule = schedule
         self.embed = embed
-        self.on_select = on_select
-
+        self.connection = connection
+        
         async def parser(interaction: discord.Interaction):
             await self.select_callback(interaction, select.values[0])
 
@@ -21,6 +22,14 @@ class ChooseSchedMenu(discord.ui.View):
         await interaction.response.edit_message(embed=None, view=None, content='*schedule cancelled*')
 
     async def select_callback(self, interaction: discord.Interaction, class_id: int):
-        embed, view = self.on_select()
+        class_inst = self.connection.query(SubjectClass).get(class_id)
+        self.embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
+        self.embed.add_field(name="Class", value=class_inst.name, inline=True)
 
-        await interaction.response.edit_message(embed=embed, view=view)
+        def save_callback():
+            self.schedule.sched_class = class_inst
+            self.connection.add(self.schedule)
+
+        view = SaveActionUi(save_callback, '*schedule cancelled*', embed=self.embed)
+
+        await interaction.response.edit_message(embed=self.embed, view=view)

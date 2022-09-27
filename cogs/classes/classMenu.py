@@ -1,9 +1,10 @@
 import discord
+from typing import Union
 from db.manage import Connection, SubjectClass
 
 
 class SaveClassMenu(discord.ui.View):
-    def __init__(self, class_inst, embed):
+    def __init__(self, class_inst: SubjectClass, embed: Union[discord.Embed, None]):
         super().__init__()
         self.value = None
         self.class_inst = class_inst

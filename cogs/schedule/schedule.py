@@ -83,7 +83,6 @@ class Schedules(commands.Cog):
 
                 view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
 
-
                 # send confirmation prompt
                 await interaction.response.send_message(embed=embed, view=view)
 
@@ -99,20 +98,7 @@ class Schedules(commands.Cog):
                     ]
                 )
 
-                def on_select():
-                    class_inst = con.query(SubjectClass).get(select.values[0])
-                    embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
-                    embed.add_field(name="Class", value=class_inst.name, inline=True)
-
-                    def save_callback():
-                        sched.sched_class = class_inst
-                        con.add(sched)
-
-                    view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
-
-                    return [embed, view]
-
-                view = ChooseSchedMenu(sched, select, on_select, embed)
+                view = ChooseSchedMenu(sched, select, con, embed)
 
                 await interaction.response.send_message(embed=embed, view=view)
     

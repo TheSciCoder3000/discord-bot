@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker, Query
 from .tables import engine, Schedule, Subject, Assessment, SubjectClass
-
+from typing import Type
 
 class Connection(object):
     def __enter__(self):
@@ -19,9 +19,13 @@ class Connection(object):
         return self.session.query(rowObj)
 
     def __del__(self):
+        print('Closing connection')
         self.session.commit()
         self.session.close()
 
     def remove(self, instance):
         self.session.delete(instance)
         self.session.commit()
+
+
+ConnectionType = Type[Connection]

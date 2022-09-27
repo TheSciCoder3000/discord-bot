@@ -21,9 +21,9 @@ class SaveAssessmentMenu(discord.ui.View):
         self.embed.color = 0xe01b24
         await interaction.response.edit_message(view=None, embed=None, content='*assessment cancelled*')
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.grey)
-    async def edit_assessment(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(view=EditAssessmentMenu(self.embed))
+    # @discord.ui.button(label="Edit", style=discord.ButtonStyle.grey)
+    # async def edit_assessment(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #     await interaction.response.edit_message(view=EditAssessmentMenu(self.embed))
 
 
 class EditAssessmentMenu(discord.ui.View):

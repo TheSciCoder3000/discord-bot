@@ -1,8 +1,9 @@
+from typing import Union
 import discord
 
 
 class SaveActionUi(discord.ui.View):
-    def __init__(self, save_callback, cancel_content, embed=None):
+    def __init__(self, save_callback, cancel_content: str, embed: Union[discord.Embed, None] = None):
         super().__init__()
         self.value = None
         self.embed = embed
