@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from config import token, test_guild, tropa_guild, research_guild
+from live import keepAlive
 
 class MyBot(commands.Bot):
     def __init__(self):
@@ -25,5 +26,6 @@ class MyBot(commands.Bot):
         print(f"Bot logged in as {self.user}")
 
 
+keepAlive()
 bot = MyBot()
 bot.run(token)
