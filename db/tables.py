@@ -31,6 +31,16 @@ class SubjectClass(Base):
 class Schedule(Base):
     __tablename__ = 'schedules'
 
+    days = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+    ]
+
     id = Column(Integer, primary_key=True)
     timezone = Column(String(10), default=datetime.now().astimezone().tzinfo.tzname(datetime.now().astimezone()), nullable=False)
     weekdays = Column(Integer, nullable=False)
@@ -42,7 +52,7 @@ class Schedule(Base):
     def __repr__(self):
         time_start = self.time_in.strftime("%I:%M %p")
         time_end = self.time_out.strftime("%I:%M %p")
-        return f"{time_start} - {time_end}"
+        return f"{self.days[self.weekdays]} | {time_start} - {time_end}"
 
 
 class Assessment(Base):

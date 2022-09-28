@@ -1,3 +1,4 @@
+from calendar import weekday
 import discord
 from typing import List
 from configparser import ConfigParser
@@ -79,6 +80,16 @@ class Schedules(commands.Cog):
             # if there is only one connected class to the subject
             if len(class_data) == 1:
                 embed.insert_field_at(0, name="Subject", value=subject_data.code, inline=False)
+
+                sched_check = con.query(Schedule).filter_by(
+                    time_in=sched.time_in,
+                    time_out=sched.time_out,
+                    weekdays=sched.weekdays,
+                    sched_class=class_data[0]
+                ).all()
+
+                if len(sched_check) > 0:
+                    return await interaction.response.send_message("Error: schedule aready exists")
 
                 def save_callback():
                     # set the sched instance's sched column

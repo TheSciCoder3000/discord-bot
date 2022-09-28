@@ -1,3 +1,4 @@
+from calendar import weekday
 from typing import Union
 import discord
 from cogs.utils import DeleteActionUi, SaveActionUi
@@ -24,6 +25,17 @@ class ChooseSchedMenu(discord.ui.View):
 
     async def select_callback(self, interaction: discord.Interaction, class_id: int):
         class_inst = self.connection.query(SubjectClass).get(class_id)
+
+        sched_inst = self.connection.query(Schedule).filter_by(
+            time_in=self.schedule.time_in,
+            time_out=self.schedule.time_out,
+            weekdays=self.schedule.weekdays,
+            sched_class=class_inst
+        ).all()
+
+        if len(sched_inst) > 0:
+            return await interaction.response.edit_message("Error: schedule aready exists")
+
         self.embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
         self.embed.add_field(name="Class", value=class_inst.name, inline=True)
 
