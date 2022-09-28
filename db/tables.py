@@ -11,10 +11,10 @@ class Subject(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    code = Column(String(15), nullable=False, unique=True)
+    code = Column(String(15), nullable=False)
     date_created = Column(DateTime, default=datetime.utcnow)
-    classes = relationship('SubjectClass', backref='subject')
-    assessments = relationship('Assessment', backref='subject')
+    classes = relationship('SubjectClass', backref='subject', cascade='all,delete')
+    assessments = relationship('Assessment', backref='subject', cascade='all,delete')
     guild_id = Column(Integer, nullable=True)
 
 
@@ -23,7 +23,7 @@ class SubjectClass(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    schedules = relationship('Schedule', backref='sched_class')
+    schedules = relationship('Schedule', backref='sched_class', cascade='all,delete')
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     guild_id = Column(Integer, nullable=True)
 
