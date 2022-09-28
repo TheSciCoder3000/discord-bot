@@ -7,11 +7,7 @@ from discord.app_commands import Choice
 from cogs.classes.classMenu import DeleteClassSelect
 from db.manage import Connection, Subject, SubjectClass
 from cogs.utils import SaveActionUi
-
-
-config = ConfigParser()
-config.read('config.ini')
-config_data = config['GENERAL']
+from config import tropa_guild, test_guild, research_guild
 
 
 class Classes(commands.Cog):
@@ -98,7 +94,7 @@ class Classes(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Classes(bot), guilds=[
-        discord.Object(id=config_data['test_guild']),
-        discord.Object(id=config_data['tropa_guild']),
-        discord.Object(id=config_data['research_guild']),
+        discord.Object(id=test_guild),
+        discord.Object(id=tropa_guild),
+        discord.Object(id=research_guild),
     ])

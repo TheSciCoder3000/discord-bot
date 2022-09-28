@@ -8,11 +8,7 @@ from cogs.utils import DeleteActionUi
 from db.manage import Connection, Subject
 from db.tables import SubjectClass
 from .subjMenu import SubjectMenu
-
-
-config = ConfigParser()
-config.read('config.ini')
-config_data = config['GENERAL']
+from config import test_guild, tropa_guild, research_guild
 
 
 class Subjects(commands.Cog):
@@ -86,7 +82,7 @@ class Subjects(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Subjects(bot), guilds=[
-        discord.Object(id=config_data['test_guild']),
-        discord.Object(id=config_data['tropa_guild']),
-        discord.Object(id=config_data['research_guild']),
+        discord.Object(id=test_guild),
+        discord.Object(id=tropa_guild),
+        discord.Object(id=research_guild),
     ])

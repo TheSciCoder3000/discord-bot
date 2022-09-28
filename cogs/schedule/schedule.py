@@ -9,11 +9,7 @@ from db.manage import Connection, Subject, Schedule, SubjectClass
 from dateutil.parser import parse
 from cogs.utils import SaveActionUi
 from .schedMenu import ChooseSchedMenu, SelectDeleteSchedMenu
-
-
-config = ConfigParser()
-config.read('config.ini')
-config_data = config['GENERAL']
+from config import tropa_guild, research_guild, test_guild
 
 
 class Schedules(commands.Cog):
@@ -173,7 +169,7 @@ class Schedules(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Schedules(bot), guilds=[
-        discord.Object(id=config_data['test_guild']),
-        discord.Object(id=config_data['tropa_guild']),
-        discord.Object(id=config_data['research_guild']),
+        discord.Object(id=test_guild),
+        discord.Object(id=tropa_guild),
+        discord.Object(id=research_guild),
     ])

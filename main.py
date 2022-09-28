@@ -1,10 +1,6 @@
 import discord
 from discord.ext import commands
-from configparser import ConfigParser
-
-config = ConfigParser()
-config.read('config.ini')
-config_data = config['GENERAL']
+from config import token, test_guild, tropa_guild, research_guild
 
 class MyBot(commands.Bot):
     def __init__(self):
@@ -21,13 +17,13 @@ class MyBot(commands.Bot):
         for ext in self.initial_extensions:
             await self.load_extension(ext)
         
-        await bot.tree.sync(guild=discord.Object(id=config_data['test_guild']))
-        await bot.tree.sync(guild=discord.Object(id=config_data['tropa_guild']))
-        await bot.tree.sync(guild=discord.Object(id=config_data['research_guild']))
+        await bot.tree.sync(guild=discord.Object(id=test_guild))
+        await bot.tree.sync(guild=discord.Object(id=tropa_guild))
+        await bot.tree.sync(guild=discord.Object(id=research_guild))
     
     async def on_ready(self):
         print(f"Bot logged in as {self.user}")
 
 
 bot = MyBot()
-bot.run(config_data['token'])
+bot.run(token)
