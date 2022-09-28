@@ -15,12 +15,12 @@ class SubjectMenu(discord.ui.View):
 
         # connect to the database
         with Connection() as con:
+            subject = Subject(name=self.name, code=self.code, guild_id=interaction.guild.id)
             # add new subject to the database
-            con.add(Subject(name=self.name, code=self.code, guild_id=interaction.guild.id))
+            con.add(subject)
 
             # add a new main class automatically
-            subj_inst = con.query(Subject).filter_by(code=self.code).first()
-            SubjectClass(name="Main", subject=subj_inst)
+            SubjectClass(name="Main", subject=subject)
 
 
         await interaction.response.edit_message(view=None, embed=self.embed)
