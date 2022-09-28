@@ -7,7 +7,7 @@ from discord.app_commands import Choice
 from db.manage import Connection, Subject, Schedule, SubjectClass
 from dateutil.parser import parse
 from cogs.utils import SaveActionUi
-from .schedMenu import ChooseSchedMenu
+from .schedMenu import ChooseSchedMenu, SelectDeleteSchedMenu
 
 
 config = ConfigParser()
@@ -113,6 +113,42 @@ class Schedules(commands.Cog):
         interaction: discord.Interaction,
         current: str
     ):
+        subjects = []
+        with Connection() as con:
+            subjects = [
+                Choice(name=f"{subj.name}", value=subj.id)
+                for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                and subj.guild_id == interaction.guild.id
+            ]
+
+        return subjects
+
+    @app_commands.command(name="remove-sched", description="removes a schedule from a class")
+    @app_commands.rename(subject_id='subject')
+    async def remove_sched(self, interaction: discord.Interaction, subject_id: int):
+        with Connection() as con:
+            delete_subject = con.query(Subject).get(subject_id)
+            
+            if delete_subject is None:
+                return await interaction.response.send_message("Error: subject does not exist")
+            
+            select = discord.ui.Select(
+                placeholder="Select one among of the classes",
+                options=[discord.SelectOption(label=subject_class.name, value=subject_class.id) for subject_class in delete_subject.classes]
+            )
+
+            embed = discord.Embed(
+                title="Remove Class", 
+                description=f"Please select one of the classes of subject \"{delete_subject.name}\"", 
+                color=0xff7800
+            )
+
+            view = SelectDeleteSchedMenu(con, delete_subject, embed)
+
+            await interaction.response.send_message(embed=embed, view=view)
+
+    @remove_sched.autocomplete('subject_id')
+    async def remove_sched_autocomplete(self, interaction: discord.Interaction, current: str):
         subjects = []
         with Connection() as con:
             subjects = [

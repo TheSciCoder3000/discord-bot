@@ -40,8 +40,9 @@ class Schedule(Base):
     guild_id = Column(Integer, nullable=True)
 
     def __repr__(self):
-        time_in = self.time_in.strftime("%I:%M %p")
-        return f"<{time_in} - {self.weekdays}>"
+        time_start = self.time_in.strftime("%I:%M %p")
+        time_end = self.time_out.strftime("%I:%M %p")
+        return f"{time_start} - {time_end}"
 
 
 class Assessment(Base):
