@@ -1,8 +1,10 @@
+from random import choices
 import discord
 from configparser import ConfigParser
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
+from cogs.classes.classMenu import DeleteClassSelect
 from db.manage import Connection, Subject, SubjectClass
 from cogs.utils import SaveActionUi
 
@@ -49,6 +51,46 @@ class Classes(commands.Cog):
             subjects = [
                 Choice(name=f"{subj.name}", value=subj.id)
                 for subj in con.query(Subject) if current.lower() in subj.name.lower() and subj.guild_id == interaction.guild.id
+            ]
+
+        return subjects
+
+    @app_commands.command(name="remove-class", description="removes the class and its schedules")
+    @app_commands.rename(subject_id="subject")
+    async def remove_class(self, interaction: discord.Interaction, subject_id: int):
+        with Connection() as con:
+            delete_subject = con.query(Subject).get(subject_id)
+            
+            if delete_subject is None:
+                return await interaction.response.send_message("Error: subject does not exist")
+
+            if len(delete_subject.classes) == 1:
+                return await interaction.response.send_message(
+                    f"Error: the subject `{delete_subject.name}` has only one class, `{delete_subject.classes[0].name}`, A subject should always contain one class"
+                )
+            
+            select = discord.ui.Select(
+                placeholder="Select one among of the classes",
+                options=[discord.SelectOption(label=subject_class.name, value=subject_class.id) for subject_class in delete_subject.classes]
+            )
+
+            embed = discord.Embed(
+                title="Remove Class", 
+                description=f"Please select one of the classes of subject \"{delete_subject.name}\"", 
+                color=0xff7800
+            )
+
+            view = DeleteClassSelect(con, select, embed)
+
+            await interaction.response.send_message(view=view, embed=embed)
+    
+    @remove_class.autocomplete('subject_id')
+    async def remove_class_autocomplete(self, interaction: discord.Interaction, current: str):
+        with Connection() as con:
+            subjects = [
+                Choice(name=f"{subj.name}", value=subj.id)
+                for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                and subj.guild_id == interaction.guild.id
             ]
 
         return subjects
