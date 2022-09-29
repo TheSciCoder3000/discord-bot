@@ -165,6 +165,12 @@ class Schedules(commands.Cog):
             ]
 
         return subjects
+
+    @app_commands.command(name='ping')
+    async def ping_bot(self, interaction: discord.Interaction):
+        message = await interaction.original_response()
+        print(f'created at {message.created_at.strftime("%I:%M %p")}')
+        await interaction.response.send_message("pong")
     
 
 async def setup(bot: commands.Bot) -> None:
