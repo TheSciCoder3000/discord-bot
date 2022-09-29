@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from config import token, test_guild, tropa_guild, research_guild
+from config import token, test_guild, tropa_guild, research_guild, repl
 from live import keepAlive
 from db.manage import scheduler
 
@@ -27,7 +27,8 @@ class MyBot(commands.Bot):
         scheduler.start()
         print(f"Bot logged in as {self.user}")
 
-# keepAlive()
+if repl:
+    keepAlive()
 bot = MyBot()
 
 @bot.event
