@@ -1,5 +1,6 @@
 from typing import Any
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Time, ForeignKey
+from discord.ext import commands
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -57,6 +58,26 @@ class Schedule(Base):
         time_start = self.time_in.strftime("%I:%M %p")
         time_end = self.time_out.strftime("%I:%M %p")
         return f"{self.days[self.weekdays]} | {time_start} - {time_end}"
+
+    def get_day(self) -> str:
+        return self.days[self.weekdays]
+
+    def dispatch_sched_event(self, bot: commands.Bot, channel_id: int):
+        bot.dispatch(
+            'add_schedule',
+            self.get_day().lower()[:3],
+            f'{self.id} - {self.sched_class.subject.code}',
+            self.sched_class.subject.name,
+            self.time_in,
+            channel_id
+        )
+    
+    def dispatch_remove_event(self, bot: commands.Bot, channel_id: int):
+        bot.dispatch(
+            'remove_schedule',
+            f'{self.id} - {self.sched_class.subject.code}',
+            channel_id
+        )
 
 
 class Assessment(Base):

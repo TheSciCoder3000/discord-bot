@@ -91,17 +91,7 @@ class Schedules(commands.Cog):
                     # set the sched instance's sched column
                     sched.sched_class = class_data[0]
                     con.add(sched)
-                    time_start = sched.time_in
-                    self.bot.dispatch(
-                        'add_schedule',
-                        self.dayList[sched.weekdays].lower()[:3],
-                        f'{sched.id} - {sched.sched_class.subject.code}',
-                        sched.sched_class.subject.name,
-                        time_start,
-                        interaction.channel_id
-                    )
-                    print('schedule has been created, id: ', sched.id)
-
+                    sched.dispatch_sched_event(self.bot, interaction.channel_id)
 
                 view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
 
@@ -120,7 +110,7 @@ class Schedules(commands.Cog):
                     ]
                 )
 
-                view = ChooseSchedMenu(sched, select, con, embed)
+                view = ChooseSchedMenu(sched, select, con, self.bot, embed)
 
                 await interaction.response.send_message(embed=embed, view=view)
     
@@ -160,7 +150,7 @@ class Schedules(commands.Cog):
                 color=0xff7800
             )
 
-            view = SelectDeleteSchedMenu(con, delete_subject, embed)
+            view = SelectDeleteSchedMenu(con, delete_subject, self.bot, embed)
 
             await interaction.response.send_message(embed=embed, view=view)
 

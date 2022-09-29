@@ -1,17 +1,19 @@
 from calendar import weekday
 from typing import Union
 import discord
+from discord.ext import commands
 from cogs.utils import DeleteActionUi, SaveActionUi
 from db.manage import Connection, Subject, SubjectClass, Schedule
 
 
 class ChooseSchedMenu(discord.ui.View):
-    def __init__(self, schedule: Schedule, select: discord.ui.Select, connection: Connection, embed: discord.Embed):
+    def __init__(self, schedule: Schedule, select: discord.ui.Select, connection: Connection, bot: commands.Bot, embed: discord.Embed):
         super().__init__()
         self.value = None
         self.schedule = schedule
         self.embed = embed
         self.connection = connection
+        self.bot = bot
         
         async def parser(interaction: discord.Interaction):
             await self.select_callback(interaction, select.values[0])
@@ -42,6 +44,8 @@ class ChooseSchedMenu(discord.ui.View):
         def save_callback():
             self.schedule.sched_class = class_inst
             self.connection.add(self.schedule)
+            self.schedule.dispatch_sched_event(self.bot, interaction.channel_id)
+
 
         view = SaveActionUi(save_callback, '*schedule cancelled*', embed=self.embed)
 
@@ -49,11 +53,12 @@ class ChooseSchedMenu(discord.ui.View):
 
 
 class SelectDeleteSchedMenu(discord.ui.View):
-    def __init__(self, connection: Connection, subject: Subject, embed):
+    def __init__(self, connection: Connection, subject: Subject, bot: commands.Bot, embed):
         super().__init__()
         self.connection = connection
         self.subj_class: Union[SubjectClass, None] = None
         self.subject = subject
+        self.bot = bot
         self.embed = embed
         self.select = discord.ui.Select(
             placeholder="Select one of the classes",
@@ -97,6 +102,7 @@ class SelectDeleteSchedMenu(discord.ui.View):
         )
 
         def delete_callback():
+            sched.dispatch_remove_event(self.bot, interaction.channel_id)
             self.connection.remove(sched)
 
         view = DeleteActionUi(delete_callback, f"Schedule `{str(sched)}` has been removed", "schedule deletion cancelled")

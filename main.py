@@ -51,4 +51,10 @@ async def remind_me(msg: str, channel_id: int):
     channel = bot.get_channel(channel_id)
     await channel.send(msg)
 
+@bot.event
+async def on_remove_schedule(sched_id: str, channel_id: int):
+    scheduler.remove_job(sched_id)
+    channel = bot.get_channel(channel_id)
+    await channel.send("selected schedule has been removed")
+
 bot.run(token)
