@@ -1,7 +1,11 @@
 from configparser import ConfigParser
 import os
 
-repl = False
+env_config = ConfigParser()
+env_config.read('env.ini')
+mode = env_config['Env']['mode']
+
+repl = False if mode == 'dev' else True
 
 def getConfig(configKey):
     if repl:
