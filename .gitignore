@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 config.ini
 discordBot.sqlite
+job.sqlite

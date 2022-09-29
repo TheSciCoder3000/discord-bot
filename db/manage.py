@@ -1,6 +1,15 @@
+from distutils.command.config import config
+from email.policy import default
 from sqlalchemy.orm import sessionmaker, Query
 from .tables import engine, Schedule, Subject, Assessment, SubjectClass
 from typing import Type
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import discord
+
+jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///job.sqlite")}
+
+scheduler = AsyncIOScheduler(jobstores=jobstores)
 
 class Connection(object):
     def __enter__(self):

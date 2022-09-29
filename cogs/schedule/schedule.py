@@ -91,6 +91,16 @@ class Schedules(commands.Cog):
                     # set the sched instance's sched column
                     sched.sched_class = class_data[0]
                     con.add(sched)
+                    time_start = sched.time_in
+                    self.bot.dispatch(
+                        'add_schedule',
+                        self.dayList[sched.weekdays].lower()[:3],
+                        f'{sched.id} - {sched.sched_class.subject.code}',
+                        sched.sched_class.subject.name,
+                        time_start,
+                        interaction.channel_id
+                    )
+                    print('schedule has been created, id: ', sched.id)
 
 
                 view = SaveActionUi(save_callback, '*schedule cancelled*', embed=embed)
@@ -165,7 +175,7 @@ class Schedules(commands.Cog):
             ]
 
         return subjects
-
+    
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Schedules(bot), guilds=[

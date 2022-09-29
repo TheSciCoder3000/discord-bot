@@ -1,7 +1,7 @@
+from typing import Any
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Time, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
-import time
 
 engine = create_engine('sqlite:///discordBot.sqlite')
 Base = declarative_base()
@@ -30,6 +30,10 @@ class SubjectClass(Base):
 
 class Schedule(Base):
     __tablename__ = 'schedules'
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        
 
     days = [
         'Sunday',
