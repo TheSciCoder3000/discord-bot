@@ -2,7 +2,8 @@ from typing import Any
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Time, ForeignKey
 from discord.ext import commands
 from sqlalchemy.orm import declarative_base, relationship
-from datetime import datetime
+from datetime import datetime, timedelta
+from config import repl
 
 engine = create_engine('sqlite:///discordBot.sqlite')
 Base = declarative_base()
@@ -63,12 +64,13 @@ class Schedule(Base):
         return self.days[self.weekdays]
 
     def dispatch_sched_event(self, bot: commands.Bot, channel_id: int):
+        converted_time = (self.time_in - timedelta(hours=8)) if repl else self.time_in
         bot.dispatch(
             'add_schedule',
             self.get_day().lower()[:3],
             f'{self.id} - {self.sched_class.subject.code}',
             self.sched_class.subject.name,
-            self.time_in,
+            converted_time,
             channel_id
         )
     
