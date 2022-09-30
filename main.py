@@ -33,14 +33,7 @@ class MyBot(commands.Bot):
 if repl:
     keepAlive()
 
-try:
-    bot = MyBot()
-except discord.errors.HTTPException:
-    if repl:
-        print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
-        system("python restarter.py")
-        system("kill 1")
-    
+bot = MyBot()    
 
 @bot.event
 async def on_add_schedule(day: str, sched_id: str, subject_name: str, time_start, channel_id: int):
@@ -84,4 +77,10 @@ async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: in
         }
     )
 
-bot.run(token)
+try:
+    bot.run(token)
+except discord.errors.HTTPException:
+    if repl:
+        print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
+        system("python restarter.py")
+        system("kill 1")
