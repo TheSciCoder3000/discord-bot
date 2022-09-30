@@ -3,6 +3,9 @@ from discord.ext import commands
 from config import token, test_guild, tropa_guild, research_guild, repl
 from live import keepAlive
 from db.manage import scheduler
+import datetime
+from os import system
+
 
 class MyBot(commands.Bot):
     def __init__(self):
@@ -29,7 +32,15 @@ class MyBot(commands.Bot):
 
 if repl:
     keepAlive()
-bot = MyBot()
+
+try:
+    bot = MyBot()
+except discord.errors.HTTPException:
+    if repl:
+        print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
+        system("python restarter.py")
+        system("kill 1")
+    
 
 @bot.event
 async def on_add_schedule(day: str, sched_id: str, subject_name: str, time_start, channel_id: int):
@@ -57,5 +68,20 @@ async def on_remove_schedule(sched_id: str, channel_id: int):
     scheduler.remove_job(sched_id)
     channel = bot.get_channel(channel_id)
     await channel.send("selected schedule has been removed")
+
+@bot.event
+async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: int):
+    date_format = "%m/%d/%Y at %I:%M %p"
+    print(f'created job to be send at channel: {channel_id}')
+    scheduler.add_job(
+        remind_me,
+        'date',
+        id=job_id,
+        run_date=date,
+        kwargs={
+            'msg': f'You have an assessment due on `{date.strftime(date_format)}`',
+            'channel_id': channel_id
+        }
+    )
 
 bot.run(token)

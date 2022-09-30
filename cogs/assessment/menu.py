@@ -1,8 +1,11 @@
 import discord
 from typing import Type
 from db.manage import Connection, Subject, Assessment
+from cogs.utils import SaveActionUi
 
-class SaveAssessmentMenu(discord.ui.View):
+SaveAssessmentMenu = SaveActionUi
+
+class SaveAssessmentMenuBeta(discord.ui.View):
     def __init__(self, assessment_data, embed=None):
         super().__init__()
         self.assessment = assessment_data

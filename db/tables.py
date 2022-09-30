@@ -1,8 +1,9 @@
+from itertools import combinations
 from typing import Any
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Time, ForeignKey
 from discord.ext import commands
 from sqlalchemy.orm import declarative_base, relationship
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from config import repl
 
 engine = create_engine('sqlite:///discordBot.sqlite')
@@ -33,10 +34,6 @@ class SubjectClass(Base):
 class Schedule(Base):
     __tablename__ = 'schedules'
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        
-
     days = [
         'Sunday',
         'Monday',
@@ -63,15 +60,38 @@ class Schedule(Base):
     def get_day(self) -> str:
         return self.days[self.weekdays]
 
+    @staticmethod
+    def get_day_list():
+        return [
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+        ]
+
     def dispatch_sched_event(self, bot: commands.Bot, channel_id: int):
-        utc_time = (datetime.combine(date(1,1,1), self.time_in) - timedelta(hours=8)).time()
-        converted_time = utc_time if repl else self.time_in
+        dt_days = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday'
+        ]
+        utc_datetime = (datetime.combine(date(1,1,(8 + dt_days.index(self.get_day()))), self.time_in) - timedelta(hours=8))
+        converted_datetime = utc_datetime if repl else datetime.combine(date(1,1,(8 + dt_days.index(self.get_day()))), self.time_in)
+        print(f'dispatching sched event {converted_datetime.strftime("%A | %I:%M %p")}')
+        print(f'converted to utc: {utc_datetime.strftime("%A | %I:%M %p")}')
         bot.dispatch(
             'add_schedule',
-            self.get_day().lower()[:3],
+            dt_days[converted_datetime.weekday()].lower()[:3],
             f'{self.id} - {self.sched_class.subject.code}',
             self.sched_class.subject.name,
-            converted_time,
+            converted_datetime,
             channel_id
         )
     
@@ -88,6 +108,8 @@ class Assessment(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
+    due_date: datetime = Column(DateTime, nullable=False)
+    time = Column(Time, nullable=True)
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     ass_type = Column(String(20), nullable=True)
     category = Column(String(25), nullable=True)
@@ -95,3 +117,22 @@ class Assessment(Base):
 
     def __repr__(self):
         return f"<{self.name} - {self.category}>"
+    
+    def dispatch_create_event(self, bot, channel_id):
+        # create due_time
+        due_time = self.time if self.time != None else time(23, 59, 59)
+
+        # set due date with due time
+        converted_date = self.due_date.replace(
+            hour=due_time.hour,
+            minute=due_time.minute,
+            second=due_time.second
+        ) - timedelta(hours=8 if repl else 0)   # subtract timezone if in repl
+
+        # dispatch event
+        bot.dispatch(
+            'add_assessment',
+            f"{self.id} - {self.name}",
+            converted_date,
+            channel_id
+        )

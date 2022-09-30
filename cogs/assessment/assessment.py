@@ -1,12 +1,12 @@
+from email.utils import parsedate
 import discord
-from configparser import ConfigParser
+from dateutil.parser import parse
 from typing import List
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
 from .menu import SaveAssessmentMenu, ConfirmDeleteAssessment
-from db.manage import Connection, Subject, Assessment
-import os
+from db.manage import Connection, Subject, Assessment, scheduler
 from config import test_guild, research_guild, tropa_guild
 
 
@@ -15,7 +15,7 @@ class Assessments(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name='add-assessment', description='Adds new assessment')
-    @app_commands.describe(ass_name = 'name of assessment')
+    @app_commands.rename(ass_name="name", ass_type="type", due_date="date")
     @app_commands.describe(subject = 'subject of the assessment')
     @app_commands.choices(ass_type = [
         Choice(name = 'Quiz', value = 'Quiz'),
@@ -34,28 +34,45 @@ class Assessments(commands.Cog):
         interaction: discord.Interaction, 
         ass_name: str, 
         subject: int,
+        due_date: str,
+        due_time: str = None,
         ass_type: str = None, 
         category: str = None, 
     ):
-        # get subject db isntance
+        # get subject db instance
         subject_data = None
         with Connection() as con:
             subject_data = con.query(Subject).filter_by(id=subject).first()
+            parsed_date = parse(due_date)
+            parsed_time = None if due_time is None else parse(due_time).time()
 
             # create prompt of new assessment
             embed=discord.Embed(title="New Assessment", description="details of your newly created assessment", color=0xff7800)
             embed.set_author(name=f"@{interaction.user}")
             embed.add_field(name="Assessment Name", value=ass_name, inline=False)
-            embed.add_field(name="Due Date", value="10/15/2022", inline=True)
+            embed.add_field(name="Due Date", value=parsed_date.strftime("%m/%d/%Y"), inline=True)
+            embed.add_field(name="Time", value="Whole day" if parsed_time is None else parsed_time.strftime("%I:%M %p"), inline=True)
             embed.add_field(name="Type", value=ass_type, inline=True)
             embed.add_field(name="Category", value=category, inline=True)
             embed.add_field(name="Subject", value=subject_data.code, inline=False)
 
             # create new assessment db instance
-            assessment = Assessment(name=ass_name, subject=subject_data, ass_type=ass_type, category=category, guild_id=interaction.guild.id)
+            assessment = Assessment(
+                name=ass_name, 
+                subject=subject_data,
+                due_date=parsed_date,
+                time=parsed_time,
+                ass_type=ass_type, 
+                category=category, 
+                guild_id=interaction.guild.id
+            )
+
+            def save_callback():
+                con.add(assessment)
+                assessment.dispatch_create_event(self.bot, interaction.channel_id)
 
             # create custom ui view
-            view = SaveAssessmentMenu(assessment, embed=embed)
+            view = SaveAssessmentMenu(save_callback, "Assessment creation cancelled", embed)
 
             # send the message to the server
             await interaction.response.send_message(embed=embed, view=view)
@@ -111,7 +128,6 @@ class Assessments(commands.Cog):
             Choice(name=f"{ass.name} - {ass.subject.code}", value=ass.id)
             for ass in assessments if current.lower() in f"{ass.name} - {ass.subject.code}".lower()
         ]
-
 
 
 async def setup(bot: commands.Bot) -> None:
