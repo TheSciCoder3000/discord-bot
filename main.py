@@ -52,9 +52,9 @@ async def on_add_schedule(day: str, sched_id: str, subject_name: str, time_start
     )
     print('scheduler has been added')
 
-async def remind_me(msg: str, channel_id: int):
-    channel = bot.get_channel(channel_id)
-    await channel.send(msg)
+async def remind_me(msg: str, channel_id: int = None, user_id: int = None):
+    medium = await bot.fetch_channel(channel_id) if user_id is None else await bot.fetch_user(user_id)
+    await medium.send(msg)
 
 @bot.event
 async def on_remove_schedule(sched_id: str, channel_id: int):
@@ -63,9 +63,8 @@ async def on_remove_schedule(sched_id: str, channel_id: int):
     await channel.send("selected schedule has been removed")
 
 @bot.event
-async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: int):
+async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: int = None, user_id: int = None):
     date_format = "%m/%d/%Y at %I:%M %p"
-    print(f'created job to be send at channel: {channel_id}')
     scheduler.add_job(
         remind_me,
         'date',
@@ -73,9 +72,36 @@ async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: in
         run_date=date,
         kwargs={
             'msg': f'You have an assessment due on `{date.strftime(date_format)}`',
-            'channel_id': channel_id
+            'channel_id': channel_id,
+            'user_id': user_id
         }
     )
+
+    if not user_id is None:
+        user = await bot.fetch_user(user_id)
+        await user.send(f'Successfully created a reminder on {date.strftime(date_format)}')
+
+@bot.event
+async def on_remove_assessment(job_id: str, channel_id: int = None, user_id: int = None):
+    scheduler.remove_job(job_id)
+
+    # if global assessment is being deleted
+    if user_id is None:
+        # remove each individual user reminder
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            if job_id in job.id:
+                print(f'user id: "{job.id.replace(f"{job_id} - ", "")}"')
+                scheduler.remove_job(job.id)
+                indiv_user_id = int(job.id.replace(f"{job_id} - ", "")[4:])
+                indiv_user = await bot.fetch_user(indiv_user_id)
+                await indiv_user.send(f"The parent assessment has been deleted, you will no longer be getting a reminder from the assessment \"{job.id}\"")
+    
+        channel = await bot.fetch_channel(channel_id)
+        await channel.send("successfully removed assessment")
+    else:
+        user = await bot.fetch_user(user_id)
+        await user.send("successfully unsubscribed to reminder")
 
 try:
     bot.run(token)

@@ -1,12 +1,13 @@
+from typing import Union
 from email.utils import parsedate
 import discord
 from dateutil.parser import parse
 from typing import List
-from discord import app_commands
+from discord import Emoji, app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from .menu import SaveAssessmentMenu, ConfirmDeleteAssessment
-from db.manage import Connection, Subject, Assessment, scheduler
+from .menu import ReactionEventParser, SaveAssessmentMenu, ConfirmDeleteAssessment
+from db.manage import Connection, Subject, Assessment
 from config import test_guild, research_guild, tropa_guild
 
 
@@ -67,16 +68,86 @@ class Assessments(commands.Cog):
                 guild_id=interaction.guild.id
             )
 
-            def save_callback():
+            async def save_callback(inter: discord.Interaction):
                 con.add(assessment)
                 assessment.dispatch_create_event(self.bot, interaction.channel_id)
+
+                message = await inter.original_response()
+
+                embed.title = f"New Assessment #{assessment.id}"
+
+                await message.edit(embed=embed)
+
+                # add reactions
+                await message.add_reaction('⏰')
 
             # create custom ui view
             view = SaveAssessmentMenu(save_callback, "Assessment creation cancelled", embed)
 
             # send the message to the server
             await interaction.response.send_message(embed=embed, view=view)
+    
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        reaction = await ReactionEventParser(payload, self.bot, "New Assessment")
+        assessment_id = reaction.embeds[0].title.replace("New Assessment #", '')
+
+        with Connection() as con:
+            assessment: Assessment = con.query(Assessment).get(assessment_id)
+            if assessment is None:
+                return
+
+            name: str = assessment.name
+            ass_job_id = f"{assessment_id} - {name}"
+        
+            if not reaction.is_valid():
+                return
+
+            # if clock emoji
+            if str(reaction.emoji) == '⏰':
+                embed = reaction.embeds[0]
+
+                dm_msg = await reaction.dm_send(embed=embed)
+
+                await dm_msg.add_reaction('1️⃣')
+                await dm_msg.add_reaction('5️⃣')
+                await dm_msg.add_reaction('🔟')
+            
+            # else if "1" emoji
+            elif str(reaction.emoji) == '1️⃣':
+                assessment.dispatch_create_event(
+                    self.bot, 
+                    user_id=reaction.user_id, 
+                    job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
+                    hour=1
+                )
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        reaction = await ReactionEventParser(payload, self.bot, "New Assessment")
+        assessment_id = reaction.embeds[0].title.replace("New Assessment #", '')
+
+        with Connection() as con:
+            assessment: Assessment = con.query(Assessment).get(assessment_id)
+            if assessment is None:
+                return
+
+            name: str = assessment.name
+            ass_job_id = f"{assessment_id} - {name}"
+
+            if not reaction.is_valid():
+                return
+
+            # if removed emoji is "1"
+            if str(reaction.emoji) == '1️⃣':
+                assessment.dispatch_remove_event(
+                    self.bot, 
+                    job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
+                    user_id=reaction.user_id
+                )
+        
 
     # dynamic options generator for subjects
     @assessment.autocomplete('subject')
@@ -98,7 +169,7 @@ class Assessments(commands.Cog):
     @app_commands.command(name='remove-assessments', description='remove previous assessments')
     async def remove_assessments(self, interaction: discord.Interaction, ass_id: int):
         with Connection() as con:
-            ass_to_delete = con.query(Assessment).filter_by(id=ass_id).first()
+            ass_to_delete: Union[Assessment, None] = con.query(Assessment).filter_by(id=ass_id).first()
 
             if ass_to_delete is None:
                 await interaction.response.send_message('Error: assessment cannot be found')
@@ -108,6 +179,7 @@ class Assessments(commands.Cog):
             
             def delete_callback():
                 con.remove(ass_to_delete)
+                ass_to_delete.dispatch_remove_event(self.bot, channel_id=interaction.channel_id)
             
             view = ConfirmDeleteAssessment(ass_to_delete, delete_callback)
             
