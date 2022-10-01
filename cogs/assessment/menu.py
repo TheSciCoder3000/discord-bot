@@ -2,8 +2,56 @@ import discord
 from typing import Type
 from db.manage import Connection, Subject, Assessment
 from cogs.utils import SaveActionUi
+from discord.ext import commands
 
 SaveAssessmentMenu = SaveActionUi
+
+async def ReactionEventParser(payload: discord.RawReactionActionEvent, bot: commands.Bot, valid_title: str):
+    reaction = ReactionEvent(payload, bot, valid_title)
+    await reaction._init()
+    return reaction
+
+class ReactionEvent:
+    def __init__(self, payload: discord.RawReactionActionEvent, bot: commands.Bot, valid_title: str) -> None:
+        self.bot = bot
+        self.payload = payload
+
+        # default payload attributes
+        self.type = payload.event_type
+        self.channel_id = payload.channel_id
+        self.emoji = payload.emoji
+        self.guild_id = payload.guild_id
+        self.member = payload.member
+        self.message_id = payload.message_id
+        self.user_id = payload.user_id
+        self.valid_title = valid_title
+
+        self.dm = payload.member is None        # checks if the event is in server or dm
+
+    async def _init(self):
+        self.user = self.payload.member if not self.dm else await self.bot.fetch_user(self.payload.user_id)
+        self.message: discord.Message
+        try:
+            channel = self.bot.get_channel(self.payload.channel_id)
+            self.message = await channel.fetch_message(self.payload.message_id)
+        except AttributeError:
+            self.message = await self.user.fetch_message(self.payload.message_id)
+
+        self.embeds = self.message.embeds
+
+    
+    async def dm_send(self, content = "", embed=None, view=None) -> discord.Message:
+        return await self.user.send(content=content, embed=embed, view=view)
+    
+    def is_valid(self) -> bool:
+        if len(self.embeds) == 0 or self.bot.user.id == self.user.id:
+            return False
+
+        if not self.valid_title in self.embeds[0].title:
+            return False
+
+        return True
+
 
 class SaveAssessmentMenuBeta(discord.ui.View):
     def __init__(self, assessment_data, embed=None):
