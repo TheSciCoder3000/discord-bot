@@ -17,9 +17,9 @@ class SaveActionUi(discord.ui.View):
         if not self.embed is None:
             self.embed.color = 0x2ec27e
         
-        self.save_callback()
-
         await interaction.response.edit_message(embed=self.embed, view=None)
+
+        await self.save_callback(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
