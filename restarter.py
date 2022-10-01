@@ -1,5 +1,5 @@
 from time import sleep
 from os import system
 
-sleep(10)
+sleep(30)
 system("python main.py")
