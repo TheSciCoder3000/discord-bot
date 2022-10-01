@@ -41,7 +41,7 @@ class ChooseSchedMenu(discord.ui.View):
         self.embed.insert_field_at(0, name="Subject", value=class_inst.subject.name, inline=False)
         self.embed.add_field(name="Class", value=class_inst.name, inline=True)
 
-        def save_callback():
+        async def save_callback(inter: discord.Interaction):
             self.schedule.sched_class = class_inst
             self.connection.add(self.schedule)
             self.schedule.dispatch_sched_event(self.bot, interaction.channel_id)

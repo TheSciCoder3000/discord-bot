@@ -87,7 +87,7 @@ class Schedules(commands.Cog):
                 if len(sched_check) > 0:
                     return await interaction.response.send_message("Error: schedule aready exists")
 
-                def save_callback():
+                async def save_callback(inter: discord.Interaction):
                     # set the sched instance's sched column
                     sched.sched_class = class_data[0]
                     con.add(sched)

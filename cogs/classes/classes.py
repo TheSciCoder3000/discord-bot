@@ -30,7 +30,7 @@ class Classes(commands.Cog):
             embed.add_field(name="Name", value=name, inline=False)
             embed.add_field(name="Subject", value=subject_inst.code, inline=False)
 
-            def add_class_db():
+            async def add_class_db(inter: discord.Interaction):
                 con.add(SubjectClass(
                     name=name,
                     subject=subject_inst
