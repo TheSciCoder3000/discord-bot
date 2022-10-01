@@ -118,21 +118,38 @@ class Assessment(Base):
     def __repr__(self):
         return f"<{self.name} - {self.category}>"
     
-    def dispatch_create_event(self, bot, channel_id):
+    def dispatch_create_event(
+        self, bot, channel_id: int = None, user_id: int = None, job_id: str = None,
+        hour = 0, min = 0, sec = 0
+    ):
         # create due_time
         due_time = self.time if self.time != None else time(23, 59, 59)
+        sched_id = f"{self.id} - {self.name}" if job_id is None else job_id
 
         # set due date with due time
         converted_date = self.due_date.replace(
             hour=due_time.hour,
             minute=due_time.minute,
             second=due_time.second
-        ) - timedelta(hours=8 if repl else 0)   # subtract timezone if in repl
+        ) - timedelta(  # subtract timezone if in repl
+            hours=8 if repl else 0
+        ) - timedelta(  # subtract for advance reminders
+            hours=hour, minutes=min, seconds=sec
+        )
 
         # dispatch event
         bot.dispatch(
             'add_assessment',
-            f"{self.id} - {self.name}",
+            sched_id,
             converted_date,
-            channel_id
+            channel_id=channel_id,
+            user_id=user_id
+        )
+    
+    def dispatch_remove_event(self, bot: commands.Bot, job_id: str = None, channel_id: str = None, user_id: int = None):
+        bot.dispatch(
+            'remove_assessment',
+            f"{self.id} - {self.name}" if job_id is None else job_id,
+            channel_id=channel_id,
+            user_id=user_id
         )
