@@ -28,7 +28,6 @@ class Connection(object):
         return self.session.query(rowObj)
 
     def __del__(self):
-        print('Closing connection')
         self.session.commit()
         self.session.close()
 
