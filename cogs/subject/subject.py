@@ -80,6 +80,26 @@ class Subjects(commands.Cog):
         return subjects
 
 
+    @app_commands.command(name="list-subjects")
+    async def list_subjects(self, interaction: discord.Interaction):
+        with Connection() as con:
+            subjects: list[Subject] = con.query(Subject).all()
+
+            name_list: str = ""
+            code_list: str = ""
+            for subj in con.query(Subject).all():
+                name_list += f"`{subj.name}`\n"
+                code_list += f"`{subj.code}`\n"
+
+            embed=discord.Embed(title="List of Subjects", description="list of all server subjects")
+            embed.add_field(name="Name", value=name_list)
+            embed.add_field(name="Code", value=code_list)
+
+
+
+        await interaction.response.send_message(embed=embed)
+
+
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Subjects(bot), guilds=[
         discord.Object(id=test_guild),
