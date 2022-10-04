@@ -172,6 +172,63 @@ class Schedules(commands.Cog):
         message = await interaction.original_response()
         print(f'created at {message.created_at.strftime("%I:%M %p")}')
     
+    @app_commands.command(name="list-schedules", description="List down all the schedules in a particular subject")
+    @app_commands.rename(subject_id="subject")
+    async def list_schedules(self, interaction: discord.Interaction, subject_id: int):
+        with Connection() as con:
+            subject: Subject = con.query(Subject).get(subject_id)
+
+            if subject is None:
+                return await interaction.response.send_message("Error: subject does not exist")
+
+            classes: SubjectClass = subject.classes
+
+            embeds: list[discord.Embed] = [None for _ in classes]
+            for indx, class_inst in enumerate(classes):
+                embeds[indx] = discord.Embed(
+                    title=f"List of Schedules for Class: `{class_inst.name}`",
+                    description=f"A list of all the schedules under the class \"{class_inst.name}\""
+                )
+
+                schedules: list[Schedule] = class_inst.schedules
+
+                def sched_sorter(sched: Schedule):
+                    day_indx = sched.days.index(sched.get_day())
+                    return day_indx, sched.time_in
+
+                sorted_schedules: list[Schedule] = sorted(schedules, key=sched_sorter)
+
+                sched_str_list = ""
+                initial_day = None
+                for sched in sorted_schedules:
+                    if initial_day is None:
+                        initial_day = sched.get_day()
+                    elif initial_day != sched.get_day():
+                        sched_str_list += "\n"
+                        initial_day = sched.get_day()
+                    sched_str_list += f"{sched}\n"
+
+                embeds[indx].add_field(name="Name", value=sched_str_list if len(schedules) != 0 else "No schedules")
+
+            await interaction.response.send_message(embeds=embeds)
+    
+    @list_schedules.autocomplete('subject_id')
+    async def add_sched_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ):
+        subjects = []
+        with Connection() as con:
+            subjects = [
+                Choice(name=f"{subj.name}", value=subj.id)
+                for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                and subj.guild_id == interaction.guild.id
+            ]
+
+        return subjects
+
+
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Schedules(bot), guilds=[

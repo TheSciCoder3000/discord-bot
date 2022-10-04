@@ -44,6 +44,16 @@ class Schedule(Base):
         'Saturday',
     ]
 
+    dt_days = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday'
+    ]
+
     id = Column(Integer, primary_key=True)
     timezone = Column(String(10), default=datetime.now().astimezone().tzinfo.tzname(datetime.now().astimezone()), nullable=False)
     weekdays = Column(Integer, nullable=False)
@@ -60,6 +70,11 @@ class Schedule(Base):
     def get_day(self) -> str:
         return self.days[self.weekdays]
 
+    def datetime_sortable(self) -> datetime:
+        utc_datetime = (datetime.combine(date(1,1,(8 + self.dt_days.index(self.get_day()))), self.time_in) - timedelta(hours=8))
+        converted_datetime = utc_datetime if repl else datetime.combine(date(1,1,(8 + self.dt_days.index(self.get_day()))), self.time_in)
+        return converted_datetime
+
     @staticmethod
     def get_day_list():
         return [
@@ -73,22 +88,13 @@ class Schedule(Base):
         ]
 
     def dispatch_sched_event(self, bot: commands.Bot, channel_id: int):
-        dt_days = [
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday',
-            'Sunday'
-        ]
-        utc_datetime = (datetime.combine(date(1,1,(8 + dt_days.index(self.get_day()))), self.time_in) - timedelta(hours=8))
-        converted_datetime = utc_datetime if repl else datetime.combine(date(1,1,(8 + dt_days.index(self.get_day()))), self.time_in)
+        utc_datetime = (datetime.combine(date(1,1,(8 + self.dt_days.index(self.get_day()))), self.time_in) - timedelta(hours=8))
+        converted_datetime = utc_datetime if repl else datetime.combine(date(1,1,(8 + self.dt_days.index(self.get_day()))), self.time_in)
         print(f'dispatching sched event {converted_datetime.strftime("%A | %I:%M %p")}')
         print(f'converted to utc: {utc_datetime.strftime("%A | %I:%M %p")}')
         bot.dispatch(
             'add_schedule',
-            dt_days[converted_datetime.weekday()].lower()[:3],
+            self.dt_days[converted_datetime.weekday()].lower()[:3],
             f'{self.id} - {self.sched_class.subject.code}',
             self.sched_class.subject.name,
             converted_datetime,
