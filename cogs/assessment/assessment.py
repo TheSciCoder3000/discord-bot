@@ -3,10 +3,10 @@ from email.utils import parsedate
 import discord
 from dateutil.parser import parse
 from typing import List
-from discord import Emoji, app_commands
+from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from .menu import ReactionEventParser, SaveAssessmentMenu, ConfirmDeleteAssessment
+from .menu import ChooseAssessmentDeleteMenu, ReactionEventParser, SaveAssessmentMenu
 from db.manage import Connection, Subject, Assessment
 from config import test_guild, research_guild, tropa_guild
 
@@ -30,7 +30,7 @@ class Assessments(commands.Cog):
         Choice(name = 'Formative Assessment', value = 'FA'),
         Choice(name = 'Class Participation', value = 'CP'),
     ])
-    async def assessment(
+    async def create_assessment(
         self,
         interaction: discord.Interaction, 
         ass_name: str, 
@@ -70,7 +70,7 @@ class Assessments(commands.Cog):
 
             async def save_callback(inter: discord.Interaction):
                 con.add(assessment)
-                assessment.dispatch_create_event(self.bot, interaction.channel_id)
+                assessment.dispatch_create_event(self.bot, inter.channel_id)
 
                 message = await inter.original_response()
 
@@ -150,56 +150,91 @@ class Assessments(commands.Cog):
         
 
     # dynamic options generator for subjects
-    @assessment.autocomplete('subject')
+    @create_assessment.autocomplete('subject')
     async def assessments_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str
+    ):
+        with Connection() as con:
+            subjects = [ass for ass in con.query(Subject).filter_by(guild_id=interaction.guild.id).all()]
+            subj_names = [subj.name for subj in subjects]
+            print(subj_names)
+        
+        return [
+            Choice(name=subj.name, value=subj.id)
+            for subj in subjects
+            if current.lower() in subj.name.lower()
+        ]
+    
+
+    @app_commands.command(name='remove-assessments', description='remove previous assessments')
+    async def remove_assessments(self, interaction: discord.Interaction, subject_id: int):
+        with Connection() as con:
+            subject: Union[Subject, None] = con.query(Subject).get(subject_id)
+
+            if subject is None:
+                return await interaction.response.send_message('Error: assessment cannot be found')
+
+            embed = discord.Embed(
+                title="Delete Assessment Selection", 
+                description=f"Please choose an assessment from `{subject.name}` to be deleted", 
+                color=0xff7800
+            )
+            
+            view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, embed)
+            
+            await interaction.response.send_message(embed=embed, view=view)
+
+
+    @remove_assessments.autocomplete('subject_id')
+    async def remove_ass_autocomplete(
         self,
         interaction: discord.Interaction,
         current: str
     ):
         subjects = []
         with Connection() as con:
+            subjects = [ass for ass in con.query(Subject).filter_by(guild_id=interaction.guild.id).all()]
+        
+        return [
+            Choice(name=subj.name, value=subj.id)
+            for subj in subjects 
+            if current.lower() in subj.name.lower()
+        ]
+    
+
+    @app_commands.command(name="list-assessments")
+    @app_commands.rename(subject_id="subject")
+    async def list_assessments(self, interaction: discord.Interaction, subject_id: int):
+        with Connection() as con:
+            subject: Subject = con.query(Subject).get(subject_id)
+            assessments: list[Assessment] = subject.assessments
+
+            if len(assessments) == 0:
+                return await interaction.response.send_message(f"Subject `{subject.name}` has no assessments")
+
+            embed=discord.Embed(title="List of Assessments", description=f"displays a list of assessments for {subject.name}")
+
+            name_list = ""
+            for ass in assessments:
+                name_list += f"{ass.name}  -  {ass.category}\n"
+
+            embed.add_field(name="Name", value=name_list)
+
+            await interaction.response.send_message(embed=embed)
+    
+    @list_assessments.autocomplete('subject_id')
+    async def list_assessment_autocomplete(self, interaction: discord.Interaction, current: str):
+        subjects = []
+        with Connection() as con:
             subjects = [
                 Choice(name=f"{subj.name}", value=subj.id)
                 for subj in con.query(Subject) if current.lower() in subj.name.lower()
+                and subj.guild_id == interaction.guild.id
             ]
 
         return subjects
-    
-
-    @app_commands.command(name='remove-assessments', description='remove previous assessments')
-    async def remove_assessments(self, interaction: discord.Interaction, ass_id: int):
-        with Connection() as con:
-            ass_to_delete: Union[Assessment, None] = con.query(Assessment).filter_by(id=ass_id).first()
-
-            if ass_to_delete is None:
-                await interaction.response.send_message('Error: assessment cannot be found')
-                return
-
-            embed = discord.Embed(title="Delete Assessment Confirmation", description=f"Are you sure you want to delete {ass_to_delete.name}?", color=0xff7800)
-            
-            def delete_callback():
-                con.remove(ass_to_delete)
-                ass_to_delete.dispatch_remove_event(self.bot, channel_id=interaction.channel_id)
-            
-            view = ConfirmDeleteAssessment(ass_to_delete, delete_callback)
-            
-            await interaction.response.send_message(embed=embed, view=view)
-
-
-    @remove_assessments.autocomplete('ass_id')
-    async def remove_ass_autocomplete(
-        self,
-        interaction: discord.Interaction,
-        current: str
-    ):
-        assessments = []
-        with Connection() as con:
-            assessments = [ass for ass in con.query(Assessment).all()]
-        
-        return [
-            Choice(name=f"{ass.name} - {ass.subject.code}", value=ass.id)
-            for ass in assessments if current.lower() in f"{ass.name} - {ass.subject.code}".lower()
-        ]
 
 
 async def setup(bot: commands.Bot) -> None:
