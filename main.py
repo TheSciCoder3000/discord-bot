@@ -21,10 +21,11 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         for ext in self.initial_extensions:
             await self.load_extension(ext)
-        
-        await bot.tree.sync(guild=discord.Object(id=test_guild))
-        await bot.tree.sync(guild=discord.Object(id=tropa_guild))
-        await bot.tree.sync(guild=discord.Object(id=research_guild))
+            
+        if not repl:
+            await bot.tree.sync(guild=discord.Object(id=test_guild))
+            await bot.tree.sync(guild=discord.Object(id=tropa_guild))
+            await bot.tree.sync(guild=discord.Object(id=research_guild))
     
     async def on_ready(self):
         scheduler.start()

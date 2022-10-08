@@ -2,13 +2,13 @@ from typing import Union
 from email.utils import parsedate
 import discord
 from dateutil.parser import parse
-from typing import List
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
+
+from cogs.utils import add_cogs_setup
 from .menu import ChooseAssessmentDeleteMenu, ReactionEventParser, SaveAssessmentMenu
 from db.manage import Connection, Subject, Assessment
-from config import test_guild, research_guild, tropa_guild
 
 
 class Assessments(commands.Cog):
@@ -238,8 +238,4 @@ class Assessments(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Assessments(bot), guilds=[
-        discord.Object(id=test_guild),
-        discord.Object(id=tropa_guild),
-        discord.Object(id=research_guild),
-    ])
+    await add_cogs_setup(bot, Assessments(bot))

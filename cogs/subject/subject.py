@@ -1,14 +1,10 @@
 import discord
-from typing import List
-from configparser import ConfigParser
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from cogs.utils import DeleteActionUi
+from cogs.utils import DeleteActionUi, add_cogs_setup
 from db.manage import Connection, Subject
-from db.tables import SubjectClass
 from .subjMenu import SubjectMenu
-from config import test_guild, tropa_guild, research_guild
 
 
 class Subjects(commands.Cog):
@@ -101,8 +97,4 @@ class Subjects(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Subjects(bot), guilds=[
-        discord.Object(id=test_guild),
-        discord.Object(id=tropa_guild),
-        discord.Object(id=research_guild),
-    ])
+    await add_cogs_setup(bot, Subjects(bot))

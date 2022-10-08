@@ -1,7 +1,15 @@
-from dis import disco
 from typing import Union
 import discord
+from discord.ext import commands
+from config import repl, test_guild, tropa_guild, research_guild
 
+async def add_cogs_setup(bot: commands.Bot, CustomCog: commands.Cog):
+    if repl: await bot.add_cog(CustomCog)
+    else: await bot.add_cog(CustomCog, guilds=[
+        discord.Object(id=test_guild),
+        discord.Object(id=tropa_guild),
+        discord.Object(id=research_guild),
+    ])
 
 class SaveActionUi(discord.ui.View):
     def __init__(self, save_callback, cancel_content: str, embed: Union[discord.Embed, None] = None):

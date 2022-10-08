@@ -1,13 +1,10 @@
-from random import choices
 import discord
-from configparser import ConfigParser
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
 from cogs.classes.classMenu import DeleteClassSelect
 from db.manage import Connection, Subject, SubjectClass
-from cogs.utils import SaveActionUi
-from config import tropa_guild, test_guild, research_guild
+from cogs.utils import SaveActionUi, add_cogs_setup
 
 
 class Classes(commands.Cog):
@@ -93,8 +90,4 @@ class Classes(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Classes(bot), guilds=[
-        discord.Object(id=test_guild),
-        discord.Object(id=tropa_guild),
-        discord.Object(id=research_guild),
-    ])
+    await add_cogs_setup(bot, Classes(bot))
