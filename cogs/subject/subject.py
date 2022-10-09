@@ -31,8 +31,8 @@ class Subjects(commands.Cog):
             exist_subjs = con.query(Subject).filter_by(code=code, guild_id=interaction.guild.id).first()
 
         if not exist_subjs is None:
-            await interaction.response.send_message(f'*Error: Subject code `{code}` already exists*')
-            return
+            return await interaction.response.send_message(f'*Error: Subject code `{code}` already exists*')
+            
         await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="remove-subject", description="remove a subject and all its related classes, schedules and assessments")
@@ -79,11 +79,11 @@ class Subjects(commands.Cog):
     @app_commands.command(name="list-subjects")
     async def list_subjects(self, interaction: discord.Interaction):
         with Connection() as con:
-            subjects: list[Subject] = con.query(Subject).all()
+            subjects: list[Subject] = con.query(Subject).filter_by(guild_id=interaction.guild.id).all()
 
             name_list: str = ""
             code_list: str = ""
-            for subj in con.query(Subject).all():
+            for subj in subjects:
                 name_list += f"`{subj.name}`\n"
                 code_list += f"`{subj.code}`\n"
 
