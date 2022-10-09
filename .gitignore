@@ -131,3 +131,4 @@ config.ini
 discordBot.sqlite
 job.sqlite
 env.ini
+dev_run.py

@@ -31,6 +31,9 @@ class MyBot(commands.Bot):
         scheduler.start()
         print(f"Bot logged in as {self.user}")
 
+        if not repl:
+            system('echo "discord bot has been initialized" | festival --tts')
+
 if repl:
     keepAlive()
 
@@ -104,10 +107,14 @@ async def on_remove_assessment(job_id: str, channel_id: int = None, user_id: int
         user = await bot.fetch_user(user_id)
         await user.send("successfully unsubscribed to reminder")
 
-try:
-    bot.run(token)
-except discord.errors.HTTPException:
-    if repl:
-        print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
-        system("python restarter.py")
-        system("kill 1")
+def run_bot():
+    try:
+        bot.run(token)
+    except discord.errors.HTTPException:
+        if repl:
+            print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
+            system("python restarter.py")
+            system("kill 1")
+
+if __name__ == '__main__':
+    run_bot()
