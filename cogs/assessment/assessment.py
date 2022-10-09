@@ -7,7 +7,8 @@ from discord.ext import commands
 from discord.app_commands import Choice
 
 from cogs.utils import add_cogs_setup
-from .menu import ChooseAssessmentDeleteMenu, ReactionEventParser, SaveAssessmentMenu
+from db.tables import DatePassed
+from .menu import ChooseAssessmentDeleteMenu, PrivateReminderSettingsView, ReactionEventParser, SaveAssessmentMenu
 from db.manage import Connection, Subject, Assessment
 
 
@@ -104,25 +105,61 @@ class Assessments(commands.Cog):
             if not reaction.is_valid():
                 return
 
-            # if clock emoji
-            if str(reaction.emoji) == '⏰':
-                embed = reaction.embeds[0]
+            try:
+                # if clock emoji
+                if str(reaction.emoji) == '⏰':
+                    embed = reaction.embeds[0]
 
-                dm_msg = await reaction.dm_send(embed=embed)
+                    dm_msg = await reaction.dm_send(embed=embed)
 
-                await dm_msg.add_reaction('1️⃣')
-                await dm_msg.add_reaction('5️⃣')
-                await dm_msg.add_reaction('🔟')
-            
-            # else if "1" emoji
-            elif str(reaction.emoji) == '1️⃣':
-                assessment.dispatch_create_event(
-                    self.bot, 
-                    user_id=reaction.user_id, 
-                    job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
-                    hour=1
-                )
+                    await dm_msg.add_reaction('1️⃣')
+                    await dm_msg.add_reaction('5️⃣')
+                    await dm_msg.add_reaction('🔟')
+                    await dm_msg.add_reaction('⚙️')
+                
+                # else if "1" emoji
+                elif str(reaction.emoji) == '1️⃣':
+                    assessment.dispatch_create_event(
+                        self.bot, 
+                        user_id=reaction.user_id, 
+                        job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
+                        hour=1
+                    )
+                elif str(reaction.emoji) == '5️⃣':
+                    assessment.dispatch_create_event(
+                        self.bot, 
+                        user_id=reaction.user_id, 
+                        job_id=f"{ass_job_id} - 5 - {reaction.user_id}",
+                        hour=5
+                    )
+                elif str(reaction.emoji) == '🔟':
+                    assessment.dispatch_create_event(
+                        self.bot, 
+                        user_id=reaction.user_id, 
+                        job_id=f"{ass_job_id} - 10 - {reaction.user_id}",
+                        hour=10
+                    )
+                elif str(reaction.emoji) == '⚙️':
+                    def on_submit(hour, min, sec):
+                        submit_ass: Assessment = con.query(Assessment).get(assessment_id)
+                        if submit_ass is None:
+                            return print("Error: submit ass is none")
+                        submit_ass.dispatch_create_event(
+                            self.bot, 
+                            user_id=reaction.user_id, 
+                            job_id=f"{ass_job_id} - c - {reaction.user_id}",
+                            hour=hour,
+                            min=min,
+                            sec=sec
+                        )
 
+                    view = PrivateReminderSettingsView(on_submit)
+
+                    embed=discord.Embed(title="Do you want to custom set reminder intervals?")
+
+                    await reaction.dm_send(embed=embed, view=view)
+            except DatePassed:
+                await reaction.dm_send("Error: unable to set reminder because it's passed")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
@@ -147,7 +184,24 @@ class Assessments(commands.Cog):
                     job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
                     user_id=reaction.user_id
                 )
-        
+            if str(reaction.emoji) == '5️⃣':
+                assessment.dispatch_remove_event(
+                    self.bot, 
+                    job_id=f"{ass_job_id} - 5 - {reaction.user_id}",
+                    user_id=reaction.user_id
+                )
+            if str(reaction.emoji) == '🔟':
+                assessment.dispatch_remove_event(
+                    self.bot, 
+                    job_id=f"{ass_job_id} - 10 - {reaction.user_id}",
+                    user_id=reaction.user_id
+                )
+            if str(reaction.emoji) == '⚙️':
+                assessment.dispatch_remove_event(
+                    self.bot, 
+                    job_id=f"{ass_job_id} - c - {reaction.user_id}",
+                    user_id=reaction.user_id
+                )
 
     # dynamic options generator for subjects
     @create_assessment.autocomplete('subject')

@@ -1,8 +1,11 @@
+from lib2to3.pgen2.parse import ParseError
 import discord
 from typing import Type
 from db.manage import Connection, Subject, Assessment
 from cogs.utils import SaveActionUi
 from discord.ext import commands
+
+from db.tables import DatePassed
 
 SaveAssessmentMenu = SaveActionUi
 
@@ -40,7 +43,9 @@ class ReactionEvent:
         self.embeds = self.message.embeds
 
     
-    async def dm_send(self, content = "", embed=None, view=None) -> discord.Message:
+    async def dm_send(self, content = "", embed=None, view=None, modal=None) -> discord.Message:
+        if not modal is None:
+            return await self
         return await self.user.send(content=content, embed=embed, view=view)
     
     def is_valid(self) -> bool:
@@ -172,7 +177,52 @@ class CancelDetailMenu(discord.ui.View):
     async def cancel_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(embed=self.embed, view=EditAssessmentMenu(self.embed))
 
+class PrivateReminderSettingsView(discord.ui.View):
+    def __init__(self, submit_handler):
+        super().__init__()
+        self.submit_handler = submit_handler
 
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def launch_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CustomIntervalModal(self.submit_handler)
+        
+        # print("sending modal")
+        await interaction.response.send_modal(modal)
+
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.danger)
+    async def cancel_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Custom interval settings cancelled", view=None)
+
+class CustomIntervalModal(discord.ui.Modal):
+    def __init__(self, on_submit, title: str = "Custom Interval Reminder") -> None:
+        super().__init__(title=title)
+        self.on_submit_handler = on_submit
+
+    Hours = discord.ui.TextInput(label="Hours", default='1')
+    Minutes = discord.ui.TextInput(label="Minutes", default='0')
+    Seconds = discord.ui.TextInput(label="Seconds", default='0')
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        # checks if inputs are integers
+        try:
+            hr = int(self.Hours.value)
+            min = int(self.Minutes.value)
+            sec = int(self.Seconds.value)
+
+            self.on_submit_handler(hr, min, sec)
+
+            # await interaction.response.send_message("Custom interval reminder is being set")
+            await interaction.response.edit_message(view=None, embed=None, content="none")
+            await interaction.delete_original_response()
+
+        except ValueError:
+            return await interaction.response.edit_message("Error: invalid time settings", view=None, embed=None)
+        except DatePassed:
+            return await interaction.response.edit_message("Error: Unable to set reminder since date already passed", view=None, embed=None)
+
+        
+        
 
 class ConfirmDeleteAssessment(discord.ui.View):
     def __init__(self, assessment, delete_callback, embed=None):

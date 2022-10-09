@@ -114,7 +114,7 @@ class Assessment(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
-    due_date: datetime = Column(DateTime, nullable=False)
+    due_date = Column(DateTime, nullable=False)
     time = Column(Time, nullable=True)
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     ass_type = Column(String(20), nullable=True)
@@ -133,7 +133,7 @@ class Assessment(Base):
         sched_id = f"{self.id} - {self.name}" if job_id is None else job_id
 
         # set due date with due time
-        converted_date = self.due_date.replace(
+        converted_date: date = self.due_date.replace(
             hour=due_time.hour,
             minute=due_time.minute,
             second=due_time.second
@@ -142,6 +142,9 @@ class Assessment(Base):
         ) - timedelta(  # subtract for advance reminders
             hours=hour, minutes=min, seconds=sec
         )
+
+        if datetime.now() > converted_date:
+            raise DatePassed(f"Assessment Date already passed: {converted_date}")
 
         # dispatch event
         bot.dispatch(
@@ -159,3 +162,6 @@ class Assessment(Base):
             channel_id=channel_id,
             user_id=user_id
         )
+
+class DatePassed(Exception):
+    pass
