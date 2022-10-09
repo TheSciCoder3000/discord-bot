@@ -57,6 +57,7 @@ async def on_add_schedule(day: str, sched_id: str, subject_name: str, time_start
     print('scheduler has been added')
 
 async def remind_me(msg: str, channel_id: int = None, user_id: int = None):
+    # get channel if reminder in server or user if privater reminder
     medium = await bot.fetch_channel(channel_id) if user_id is None else await bot.fetch_user(user_id)
     await medium.send(msg)
 
@@ -83,7 +84,11 @@ async def on_add_assessment(job_id: str, date: datetime.datetime, channel_id: in
 
     if not user_id is None:
         user = await bot.fetch_user(user_id)
-        await user.send(f'Successfully created a reminder on {date.strftime(date_format)}')
+        embed=discord.Embed(
+            title="Successfully Created Reminder",
+            description=f'Successfully created a reminder on {date.strftime(date_format)}'
+        )
+        await user.send(embed=embed)
 
 @bot.event
 async def on_remove_assessment(job_id: str, channel_id: int = None, user_id: int = None):
