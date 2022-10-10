@@ -5,11 +5,12 @@ from dateutil.parser import parse
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-
+from apscheduler.jobstores.base import JobLookupError
 from cogs.utils import add_cogs_setup
 from db.tables import DatePassed
 from .menu import ChooseAssessmentDeleteMenu, PrivateReminderSettingsView, ReactionEventParser, SaveAssessmentMenu
-from db.manage import Connection, Subject, Assessment
+from db.manage import Connection, Subject, Assessment, scheduler
+import datetime
 
 
 class Assessments(commands.Cog):
@@ -31,7 +32,7 @@ class Assessments(commands.Cog):
         Choice(name = 'Formative Assessment', value = 'FA'),
         Choice(name = 'Class Participation', value = 'CP'),
     ])
-    async def create_assessment(
+    async def add_assessment(
         self,
         interaction: discord.Interaction, 
         ass_name: str, 
@@ -87,6 +88,30 @@ class Assessments(commands.Cog):
 
             # send the message to the server
             await interaction.response.send_message(embed=embed, view=view)
+
+
+    @commands.Cog.listener()
+    async def on_add_assessment(self, job_id: str, date: datetime.datetime, channel_id: int = None, user_id: int = None):
+        date_format = "%m/%d/%Y at %I:%M %p"
+        scheduler.add_job(
+            'main:remind_me',
+            'date',
+            id=job_id,
+            run_date=date,
+            kwargs={
+                'msg': f'You have an assessment due on `{date.strftime(date_format)}`',
+                'channel_id': channel_id,
+                'user_id': user_id
+            }
+        )
+
+        if not user_id is None:
+            user = await self.bot.fetch_user(user_id)
+            embed=discord.Embed(
+                title="Successfully Created Reminder",
+                description=f'Successfully created a reminder on {date.strftime(date_format)}'
+            )
+            await user.send(embed=embed)
     
 
     @commands.Cog.listener()
@@ -161,6 +186,7 @@ class Assessments(commands.Cog):
             except DatePassed:
                 await reaction.dm_send("Error: unable to set reminder because it's passed")
 
+
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         reaction = await ReactionEventParser(payload, self.bot, "New Assessment")
@@ -184,28 +210,29 @@ class Assessments(commands.Cog):
                     job_id=f"{ass_job_id} - 1 - {reaction.user_id}",
                     user_id=reaction.user_id
                 )
-            if str(reaction.emoji) == '5️⃣':
+            elif str(reaction.emoji) == '5️⃣':
                 assessment.dispatch_remove_event(
                     self.bot, 
                     job_id=f"{ass_job_id} - 5 - {reaction.user_id}",
                     user_id=reaction.user_id
                 )
-            if str(reaction.emoji) == '🔟':
+            elif str(reaction.emoji) == '🔟':
                 assessment.dispatch_remove_event(
                     self.bot, 
                     job_id=f"{ass_job_id} - 10 - {reaction.user_id}",
                     user_id=reaction.user_id
                 )
-            if str(reaction.emoji) == '⚙️':
+            elif str(reaction.emoji) == '⚙️':
                 assessment.dispatch_remove_event(
                     self.bot, 
                     job_id=f"{ass_job_id} - c - {reaction.user_id}",
                     user_id=reaction.user_id
                 )
 
+
     # dynamic options generator for subjects
-    @create_assessment.autocomplete('subject')
-    async def assessments_autocomplete(
+    @add_assessment.autocomplete('subject')
+    async def add_ass_autocomplete(
         self,
         interaction: discord.Interaction,
         current: str
@@ -239,6 +266,32 @@ class Assessments(commands.Cog):
             view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, embed)
             
             await interaction.response.send_message(embed=embed, view=view)
+
+
+    @commands.Cog.listener()
+    async def on_remove_assessment(self, job_id: str, channel_id: int = None, user_id: int = None):
+        try:
+            scheduler.remove_job(job_id)
+        except JobLookupError:
+            return print("Unable to find and remove job from database")
+
+        # if global assessment is being deleted
+        if user_id is None:
+            # remove each individual user reminder
+            jobs = scheduler.get_jobs()
+            for job in jobs:
+                if job_id in job.id:
+                    print(f'user id: "{job.id.replace(f"{job_id} - ", "")}"')
+                    scheduler.remove_job(job.id)
+                    indiv_user_id = int(job.id.replace(f"{job_id} - ", "")[4:])
+                    indiv_user = await self.bot.fetch_user(indiv_user_id)
+                    await indiv_user.send(f"The parent assessment has been deleted, you will no longer be getting a reminder from the assessment \"{job.id}\"")
+        
+            channel = await self.bot.fetch_channel(channel_id)
+            await channel.send("successfully removed assessment reminder")
+        else:
+            user = await self.bot.fetch_user(user_id)
+            await user.send("successfully unsubscribed to reminder")
 
 
     @remove_assessments.autocomplete('subject_id')
@@ -278,8 +331,9 @@ class Assessments(commands.Cog):
 
             await interaction.response.send_message(embed=embed)
     
+
     @list_assessments.autocomplete('subject_id')
-    async def list_assessment_autocomplete(self, interaction: discord.Interaction, current: str):
+    async def list_ass_autocomplete(self, interaction: discord.Interaction, current: str):
         subjects = []
         with Connection() as con:
             subjects = [

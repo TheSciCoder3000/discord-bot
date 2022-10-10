@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from db.manage import Connection, Subject, Schedule, SubjectClass
+from db.manage import Connection, Subject, Schedule, SubjectClass, scheduler
 from dateutil.parser import parse
 from cogs.utils import SaveActionUi, add_cogs_setup
 from .schedMenu import ChooseSchedMenu, SelectDeleteSchedMenu
@@ -110,6 +110,25 @@ class Schedules(commands.Cog):
 
                 await interaction.response.send_message(embed=embed, view=view)
     
+
+    @commands.Cog.listener()
+    async def on_add_schedule(self, day: str, sched_id: str, subject_name: str, time_start, channel_id: int):
+        time_str = time_start.strftime("%I:%M %p")
+        scheduler.add_job(
+            'main:remind_me', 
+            'cron',
+            day_of_week=day,
+            hour=time_start.hour,
+            minute=time_start.minute,
+            id=sched_id,
+            kwargs={
+                "msg": f"You have a schedule for {subject_name} at {time_str}",
+                'channel_id': channel_id
+            }
+        )
+        print('scheduler has been added')
+
+
     @add_sched.autocomplete('subject')
     async def add_sched_autocomplete(
         self,
@@ -125,6 +144,7 @@ class Schedules(commands.Cog):
             ]
 
         return subjects
+
 
     @app_commands.command(name="remove-sched", description="removes a schedule from a class")
     @app_commands.rename(subject_id='subject')
@@ -150,6 +170,14 @@ class Schedules(commands.Cog):
 
             await interaction.response.send_message(embed=embed, view=view)
 
+
+    @commands.Cog.listener()
+    async def on_remove_schedule(self, sched_id: str, channel_id: int):
+        scheduler.remove_job(sched_id)
+        channel = self.bot.get_channel(channel_id)
+        await channel.send("selected schedule has been removed")
+
+
     @remove_sched.autocomplete('subject_id')
     async def remove_sched_autocomplete(self, interaction: discord.Interaction, current: str):
         subjects = []
@@ -162,12 +190,14 @@ class Schedules(commands.Cog):
 
         return subjects
 
+
     @app_commands.command(name='ping')
     async def ping_bot(self, interaction: discord.Interaction):
         await interaction.response.send_message("pong")
         message = await interaction.original_response()
         print(f'created at {message.created_at.strftime("%I:%M %p")}')
-    
+
+
     @app_commands.command(name="list-schedules", description="List down all the schedules in a particular subject")
     @app_commands.rename(subject_id="subject")
     async def list_schedules(self, interaction: discord.Interaction, subject_id: int):
@@ -208,8 +238,9 @@ class Schedules(commands.Cog):
 
             await interaction.response.send_message(embeds=embeds)
     
+
     @list_schedules.autocomplete('subject_id')
-    async def add_sched_autocomplete(
+    async def list_sched_autocomplete(
         self,
         interaction: discord.Interaction,
         current: str
