@@ -15,23 +15,24 @@ class Subjects(commands.Cog):
     async def add_subject(
         self,
         interaction: discord.Interaction,
-        subj_name: str,
+        name: str,
         code: str
     ):
-        # send prompt of new assessment
-        embed=discord.Embed(title="New Subject", description="details of your newly created subject", color=0xff7800)
-        embed.set_author(name=f"@{interaction.user}")
-        embed.add_field(name="Subject Name", value=subj_name, inline=False)
-        embed.add_field(name="Subject Code", value=code, inline=True)
-
-        view = SubjectMenu(embed=embed, name=subj_name, code=code)
-
+        # check if subject already exists
         exist_subjs = None
         with Connection() as con:
             exist_subjs = con.query(Subject).filter_by(code=code, guild_id=interaction.guild.id).first()
 
         if not exist_subjs is None:
             return await interaction.response.send_message(f'*Error: Subject code `{code}` already exists*')
+        
+        # create prompt of new assessment
+        embed=discord.Embed(title="New Subject", description="details of your newly created subject", color=0xff7800)
+        embed.set_author(name=f"@{interaction.user}")
+        embed.add_field(name="Subject Name", value=name, inline=False)
+        embed.add_field(name="Subject Code", value=code, inline=True)
+
+        view = SubjectMenu(embed=embed, name=name, code=code)
             
         await interaction.response.send_message(embed=embed, view=view)
 
