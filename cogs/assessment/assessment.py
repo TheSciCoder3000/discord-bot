@@ -88,30 +88,6 @@ class Assessments(commands.Cog):
 
             # send the message to the server
             await interaction.response.send_message(embed=embed, view=view)
-
-
-    @commands.Cog.listener()
-    async def on_add_assessment(self, job_id: str, date: datetime.datetime, channel_id: int = None, user_id: int = None):
-        date_format = "%m/%d/%Y at %I:%M %p"
-        scheduler.add_job(
-            'main:remind_me',
-            'date',
-            id=job_id,
-            run_date=date,
-            kwargs={
-                'msg': f'You have an assessment due on `{date.strftime(date_format)}`',
-                'channel_id': channel_id,
-                'user_id': user_id
-            }
-        )
-
-        if not user_id is None:
-            user = await self.bot.fetch_user(user_id)
-            embed=discord.Embed(
-                title="Successfully Created Reminder",
-                description=f'Successfully created a reminder on {date.strftime(date_format)}'
-            )
-            await user.send(embed=embed)
     
 
     @commands.Cog.listener()

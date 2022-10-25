@@ -109,24 +109,6 @@ class Schedules(commands.Cog):
                 view = ChooseSchedMenu(sched, select, con, self.bot, embed)
 
                 await interaction.response.send_message(embed=embed, view=view)
-    
-
-    @commands.Cog.listener()
-    async def on_add_schedule(self, day: str, sched_id: str, subject_name: str, time_start, channel_id: int):
-        time_str = time_start.strftime("%I:%M %p")
-        scheduler.add_job(
-            'main:remind_me', 
-            'cron',
-            day_of_week=day,
-            hour=time_start.hour,
-            minute=time_start.minute,
-            id=sched_id,
-            kwargs={
-                "msg": f"You have a schedule for {subject_name} at {time_str}",
-                'channel_id': channel_id
-            }
-        )
-        print('scheduler has been added')
 
 
     @add_sched.autocomplete('subject')
