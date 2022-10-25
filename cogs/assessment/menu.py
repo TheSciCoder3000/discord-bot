@@ -1,6 +1,5 @@
-from lib2to3.pgen2.parse import ParseError
 import discord
-from typing import Type
+from typing import List
 from db.manage import Connection, Subject, Assessment
 from cogs.utils import SaveActionUi
 from discord.ext import commands
@@ -58,21 +57,20 @@ class ReactionEvent:
         return True
 
 class ChooseAssessmentDeleteMenu(discord.ui.View):
-    def __init__(self, bot: commands.Bot, guild_id: int, embed: discord.Embed = None):
+    def __init__(self, bot: commands.Bot, guild_id: int, assessments, embed: discord.Embed = None):
         super().__init__()
         self.embed = embed
         self.bot = bot
 
         with Connection() as con:
-            assessments: list[Assessment] = con.query(Assessment).filter_by(guild_id=guild_id).all()
-            
             self.select = discord.ui.Select(
                 placeholder="choose an assessment to be deleted",
                 options=[
                     discord.SelectOption(label=ass.name, value=ass.id)
-                    for ass in assessments
+                    for ass in assessments[-25:]
                 ],
-                row=1
+                row=1,
+                max_values=len(assessments[-25:])
             )
             self.select.callback = self.select_callback
             self.add_item(self.select)
@@ -84,23 +82,24 @@ class ChooseAssessmentDeleteMenu(discord.ui.View):
         await interaction.response.edit_message(view=None, embed=self.embed)
 
     async def select_callback(self, interaction: discord.Interaction):
-        ass_id = self.select.values[0]
+        ass_ids = self.select.values
 
 
         with Connection() as con:
-            assessment: Assessment = con.query(Assessment).get(ass_id)
+            assessments: List[Assessment] = [con.query(Assessment).get(ass_id) for ass_id in ass_ids]
             
             self.embed.title = "Assessment Deletion Confirmation"
-            self.embed.description = f"Are you sure you want to delete `{assessment.name}`"
+            self.embed.description = f"Are you sure you want to delete the following assessments"
 
             def delete_callback():
-                assessment.dispatch_remove_event(
-                    self.bot, f"{assessment.id} - {assessment.name}", 
-                    interaction.channel_id
-                )
-                con.remove(assessment)
+                for assessment in assessments:
+                    assessment.dispatch_remove_event(
+                        self.bot, f"{assessment.id} - {assessment.name}", 
+                        interaction.channel_id
+                    )
+                    con.remove(assessment)
 
-            view = ConfirmDeleteAssessment(assessment, delete_callback, self.embed)
+            view = ConfirmDeleteAssessment(assessments, delete_callback, self.embed)
 
             await interaction.response.edit_message(view=view, embed=self.embed)
 
@@ -225,19 +224,25 @@ class CustomIntervalModal(discord.ui.Modal):
         
 
 class ConfirmDeleteAssessment(discord.ui.View):
-    def __init__(self, assessment, delete_callback, embed=None):
+    def __init__(self, assessments, delete_callback, embed=None):
         super().__init__()
-        self.assessment = assessment
+        self.assessments = assessments
         self.delete_cb = delete_callback
         self.embed = embed
 
     @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger)
     async def delete_assessment_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.embed = discord.Embed(title="Delete Assessment Successful", description=f"Successfuly deleted assessemtn \"{self.assessment.name}\"", color=0x57e389)
+        if len(self.assessments) == 1:
+            self.embed = discord.Embed(title="Delete Assessment Successful", description=f"Successfuly deleted assessemtn \"{self.assessments[0].name}\"", color=0x57e389)
+        else:
+            self.embed = discord.Embed(title="Delete Assessment Successful", description="Successfuly deleted the selected assessments", color=0x57e389)
         self.delete_cb()
         await interaction.response.edit_message(embed=self.embed, view=None)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel_delete_assessment_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.embed = discord.Embed(title="Delete Assessment Cancellation", description=f"deletion of assessemtn \"{self.assessment.name}\" is cancelled", color=0x57e389)
+        if len(self.assessments) == 1:
+            self.embed = discord.Embed(title="Delete Assessment Cancellation", description=f"deletion of assessemtn \"{self.assessments[0].name}\" is cancelled", color=0x57e389)
+        else:
+            self.embed = discord.Embed(title="Delete Assessment Cancellation", description="deletion of assessments is cancelled", color=0x57e389)
         await interaction.response.edit_message(embed=self.embed, view=None)

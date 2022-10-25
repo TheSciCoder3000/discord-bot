@@ -231,7 +231,16 @@ class Assessments(commands.Cog):
             subject: Union[Subject, None] = con.query(Subject).get(subject_id)
 
             if subject is None:
-                return await interaction.response.send_message('Error: assessment cannot be found')
+                return await interaction.response.send_message('Error: subject cannot be found')
+
+            if len(subject.assessments) == 0:
+                return await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title=f"Unable to fetch assessments of subject \"{subject.name}\"",
+                        description=f"The subject \"{subject.name}\" has 0 assessments",
+                        color=0x57e389
+                    )
+                )
 
             embed = discord.Embed(
                 title="Delete Assessment Selection", 
@@ -239,7 +248,7 @@ class Assessments(commands.Cog):
                 color=0xff7800
             )
             
-            view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, embed)
+            view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, assessments, embed)
             
             await interaction.response.send_message(embed=embed, view=view)
 
