@@ -248,7 +248,7 @@ class Assessments(commands.Cog):
                 color=0xff7800
             )
             
-            view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, assessments, embed)
+            view = ChooseAssessmentDeleteMenu(self.bot, interaction.guild.id, subject.assessments, embed)
             
             await interaction.response.send_message(embed=embed, view=view)
 
