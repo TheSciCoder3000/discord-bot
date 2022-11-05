@@ -12,8 +12,8 @@ async def add_cogs_setup(bot: commands.Bot, CustomCog: commands.Cog):
     ])
 
 class SaveActionUi(discord.ui.View):
-    def __init__(self, save_callback, cancel_content: str, embed: Union[discord.Embed, None] = None):
-        super().__init__()
+    def __init__(self, save_callback, cancel_content: str, embed: Union[discord.Embed, None] = None, timeout=60):
+        super().__init__(timeout=timeout)
         self.value = None
         self.embed = embed
         self.save_callback = save_callback

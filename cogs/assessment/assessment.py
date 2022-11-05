@@ -1,7 +1,7 @@
+from email import message
 from typing import Union
-from email.utils import parsedate
 import discord
-from dateutil.parser import parse
+from dateutil.parser import parse, ParserError
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
@@ -10,7 +10,6 @@ from cogs.utils import add_cogs_setup
 from db.tables import DatePassed
 from .menu import ChooseAssessmentDeleteMenu, PrivateReminderSettingsView, ReactionEventParser, SaveAssessmentMenu
 from db.manage import Connection, Subject, Assessment, scheduler
-import datetime
 
 
 class Assessments(commands.Cog):
@@ -46,8 +45,17 @@ class Assessments(commands.Cog):
         subject_data = None
         with Connection() as con:
             subject_data = con.query(Subject).filter_by(id=subject).first()
-            parsed_date = parse(due_date)
-            parsed_time = None if due_time is None else parse(due_time).time()
+            try:
+                parsed_date = parse(due_date)
+                parsed_time = None if due_time is None else parse(due_time).time()
+            except ParserError:
+                return await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Error: Invalid assessment settings",
+                        description=f"Error, you have entered either the wrong date or time format. Please check again.",
+                        color=0xed333b
+                    )
+                )
 
             # create prompt of new assessment
             embed=discord.Embed(title="New Assessment", description="details of your newly created assessment", color=0xff7800)
@@ -88,6 +96,15 @@ class Assessments(commands.Cog):
 
             # send the message to the server
             await interaction.response.send_message(embed=embed, view=view)
+
+            timedout = await view.wait()
+            if timedout:
+                message = await interaction.original_response()
+                await message.edit(embed = discord.Embed(
+                    title="Assessment Creation Expired",
+                    description="Your assessment creation has timedout and expired. Please create another one",
+                    color=0xed333b
+                ), view=view.clear_items())
     
 
     @commands.Cog.listener()
@@ -304,7 +321,13 @@ class Assessments(commands.Cog):
             assessments: list[Assessment] = subject.assessments
 
             if len(assessments) == 0:
-                return await interaction.response.send_message(f"Subject `{subject.name}` has no assessments")
+                return await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="No assessments found",
+                        description=f"the subject {subject.name} has no assessments",
+                        color=0xed333b
+                    )
+                )
 
             embed=discord.Embed(title="List of Assessments", description=f"displays a list of assessments for {subject.name}")
 
