@@ -17,7 +17,7 @@ class Assessments(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name='add-assessment', description='Adds new assessment')
-    @app_commands.rename(ass_name="name", ass_type="type", due_date="date")
+    @app_commands.rename(ass_name="name", ass_type="type", due_date="date", due_time="time")
     @app_commands.describe(subject = 'subject of the assessment')
     @app_commands.choices(ass_type = [
         Choice(name = 'Quiz', value = 'Quiz'),
@@ -98,7 +98,7 @@ class Assessments(commands.Cog):
             await interaction.response.send_message(embed=embed, view=view)
 
             timedout = await view.wait()
-            if timedout:
+            if timedout and not view.saved:
                 message = await interaction.original_response()
                 await message.edit(embed = discord.Embed(
                     title="Assessment Creation Expired",
