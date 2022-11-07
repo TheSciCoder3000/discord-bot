@@ -2,9 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
-from cogs.classes.classMenu import DeleteClassSelect
+from cogs.classes.classMenu import DeleteClassSelect, SaveClassMenu
 from db.manage import Connection, Subject, SubjectClass
-from cogs.utils import SaveActionUi, add_cogs_setup
+from cogs.utils import add_cogs_setup
 
 
 class Classes(commands.Cog):
@@ -33,7 +33,7 @@ class Classes(commands.Cog):
                     subject=subject_inst
                 ))
 
-            view = SaveActionUi(add_class_db, "`*Class is cancelled*`", embed=embed)
+            view = SaveClassMenu(add_class_db, "Class creation is cancelled", embed=embed)
 
             await interaction.response.send_message(embed=embed, view=view)
 
