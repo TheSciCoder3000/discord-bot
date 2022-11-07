@@ -35,8 +35,13 @@ class SaveActionUi(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.embed is None:
-            self.embed.color = 0xe01b24
-        await interaction.response.edit_message(embed=self.embed, view=None, content=self.cancel_content)
+            self.embed = discord.Embed(
+                title=self.cancel_content,
+                description="The process has been cancelled. You can try to create another one.",
+                color=0xe01b24
+            )
+
+        await interaction.response.edit_message(embed=self.embed, view=None)
 
 class DeleteActionUi(discord.ui.View):
     def __init__(self, delete_callback, deleted_content: str, cancelled_content: str):
