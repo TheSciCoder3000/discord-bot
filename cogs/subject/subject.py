@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.app_commands import Choice
 from cogs.utils import DeleteActionUi, add_cogs_setup
-from db.manage import Connection, Subject
+from db.manage import Connection, Subject, SubjectClass
 from .subjMenu import SubjectMenu
 
 
@@ -32,9 +32,28 @@ class Subjects(commands.Cog):
         embed.add_field(name="Subject Name", value=name, inline=False)
         embed.add_field(name="Subject Code", value=code, inline=True)
 
-        view = SubjectMenu(embed=embed, name=name, code=code)
+        async def save_callback(interaction: discord.Interaction):
+            with Connection() as con:
+                subject = Subject(name=name, code=code, guild_id=interaction.guild.id)
+                # add new subject to the database
+                con.add(subject)
+
+                # add a new main class automatically
+                SubjectClass(name="Main", subject=subject)
+
+        view = SubjectMenu(save_callback, "Subject Creation cancelled", embed=embed)
             
         await interaction.response.send_message(embed=embed, view=view)
+
+        timed_out = await view.wait()
+
+        if timed_out and not view.saved:
+                message = await interaction.original_response()
+                await message.edit(embed = discord.Embed(
+                    title="Subject Creation Expired",
+                    description="Your subject creation has timedout and expired. Please create another one",
+                    color=0xed333b
+                ), view=view.clear_items())
 
     @app_commands.command(name="remove-subject", description="remove a subject and all its related classes, schedules and assessments")
     @app_commands.rename(subject_id='subject')
