@@ -36,6 +36,14 @@ class Classes(commands.Cog):
             view = SaveClassMenu(add_class_db, "Class creation is cancelled", embed=embed)
 
             await interaction.response.send_message(embed=embed, view=view)
+            timedout = await view.wait()
+            if timedout and not view.saved:
+                message = await interaction.original_response()
+                await message.edit(embed = discord.Embed(
+                    title="Class Creation Expired",
+                    description="Your class creation has timedout and expired. Please create another one",
+                    color=0xed333b
+                ), view=view.clear_items())
 
     @add_class.autocomplete('subject')
     async def add_class_autocomplete(self, interaction: discord.Interaction, current: str):
