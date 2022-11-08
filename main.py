@@ -28,8 +28,8 @@ class MyBot(commands.Bot):
         # only individually sync bot with specified servers if in dev mode
         if not repl:
             await bot.tree.sync(guild=discord.Object(id=test_guild))
-            await bot.tree.sync(guild=discord.Object(id=tropa_guild))
-            await bot.tree.sync(guild=discord.Object(id=research_guild))
+            # await bot.tree.sync(guild=discord.Object(id=tropa_guild))
+            # await bot.tree.sync(guild=discord.Object(id=research_guild))
     
     # overried on_ready event to start bot scheduler
     async def on_ready(self):
@@ -87,14 +87,16 @@ async def on_add_schedule(day: str, sched_id: str, subject_name: str, time_start
     print('scheduler has been added')
 
 if __name__ == '__main__':
-    try:
-        # on production mode, run keepAlive script to prevent forcefully closing the program
-        if repl:
-            keepAlive()
+    if repl:
+        try:
+            # on production mode, run keepAlive script to prevent forcefully closing the program
+            if repl:
+                keepAlive()
 
-        bot.run(token)
-    except discord.errors.HTTPException:
-        if repl:
+            bot.run(token)
+        except discord.errors.HTTPException:
             print("\n\n\nBLOCKED BY RATE LIMIT\nRESTARTING NOW\n\n\n")
             system("python restarter.py")
             system("kill 1")
+    else:
+        bot.run(token)
